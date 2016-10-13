@@ -1,0 +1,6 @@
+#!/bin/bash
+
+cd /home/pi
+/usr/bin/java -jar .m2/repository/iot-solar-boiler/controller/1.0-SNAPSHOT/controller-1.0-SNAPSHOT-jar-with-dependencies.jar $1
+
+exit 0

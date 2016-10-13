@@ -1,0 +1,10 @@
+.idea
+*.iml
+target
+
+# Windows files
+Thumbs.db
+Desktop.ini
+
+# Windows shortcuts
+*.lnk
