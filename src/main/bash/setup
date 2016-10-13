@@ -9,7 +9,7 @@ sudo apt-get -y upgrade
 sudo apt-get -y install cron-apt rpi-update
 #sudo rpi-update
 sudo apt-get -y install redis-server
-sudo apt-get -y install maven
+sudo apt-get -y install openjdk-7-jdk maven
 #sudo apt-get -y install collectd
 sudo apt-get -y install librxtx-java
 
