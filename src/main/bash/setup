@@ -1,6 +1,6 @@
 #!/bin/bash
 # respberry pi setup script for iot-solar
-# first run git clone https://github.com/jstelwag/iot-solar-boiler
+# first run sudo apt-get git && git clone https://github.com/jstelwag/iot-furnace
 
 sudo apt-get update
 sudo apt-get -y remove exim4-base exim4-config exim4-daemon-light sonic-pi
@@ -16,12 +16,9 @@ sudo apt-get -y install maven
 sudo apt-get -y install librxtx-java
 
 cat <<EOF >iot.conf
-location.latitude=
-location.longitude=
-location.elevation=100
 influx.ip=192.168.
 influx.port=8087
-usb.furnace=/dev/ttyACM1
+usb.furnace=/dev/ttyUSB0
 usb.solar=/dev/ttyACM0
 logstash.ip=192.168.
 logstash.port=9000
@@ -32,7 +29,7 @@ sudo mv iot.conf /etc
 
 cat <<EOF >iot-upgrade
 #!/bin/bash
-cd /home/pi/iot-solar-boiler
+cd /home/pi/iot-furnace
 git pull
 sh src/main/bash/iot-upgrade
 EOF
@@ -41,7 +38,7 @@ sudo chmod +x /usr/local/bin/iot-upgrade
 
 cat <<EOF >iot-runtime
 #!/bin/bash
-sh /home/pi/iot-solar-boiler/src/main/bash/iot-runtime $1
+sh /home/pi/iot-furnace/src/main/bash/iot-runtime $1
 exit 0
 EOF
 sudo mv iot-runtime /usr/local/bin
