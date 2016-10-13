@@ -1,11 +1,9 @@
 #!/bin/bash
 # respberry pi setup script for iot-solar
 # first run sudo apt-get git && git clone https://github.com/jstelwag/iot-furnace
+# then sh iot-furnace/src/main/bash/setup
 
 sudo apt-get update
-sudo apt-get -y remove exim4-base exim4-config exim4-daemon-light sonic-pi
-sudo apt-get -y remove cups* gnome* x11-common*
-sudo apt-get -y autoremove
 sudo apt-get -y upgrade
 
 sudo apt-get -y install cron-apt rpi-update
@@ -19,7 +17,6 @@ cat <<EOF >iot.conf
 influx.ip=192.168.
 influx.port=8087
 usb.furnace=/dev/ttyUSB0
-usb.solar=/dev/ttyACM0
 logstash.ip=192.168.
 logstash.port=9000
 monitor.ip=192.168.

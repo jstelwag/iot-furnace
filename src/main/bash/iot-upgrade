@@ -1,5 +1,5 @@
 #!/bin/bash
-cd /home/pi/iot-funace
+cd /home/pi/iot-furnace
 /usr/bin/mvn clean install
 /usr/bin/crontab src/main/bash/crontab
 
