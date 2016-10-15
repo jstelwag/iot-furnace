@@ -133,7 +133,7 @@ System.out.println("hoi " + inputLine);
                     LogstashLogger.INSTANCE.message("iot-furnace-controller-" + iotId, inputLine.substring(4).trim());
                 } else if (StringUtils.countMatches(inputLine, ":") > 1) {
                     //Forward state message from controller
-                    String response = Request.Post("http://" + monitorIp +":" + monitorPort + "/furnace/koetshuis_kelder/")
+                    String response = Request.Post("http://" + monitorIp +":" + monitorPort + "/valvegroup/")
                             .bodyString(inputLine, ContentType.DEFAULT_TEXT).execute().returnContent().asString();
                     try {
                         PrintWriter out = new PrintWriter(serialPort.getOutputStream());
