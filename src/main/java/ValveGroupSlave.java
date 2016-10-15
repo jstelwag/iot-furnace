@@ -43,7 +43,6 @@ public class ValveGroupSlave implements SerialPortEventListener {
         startTime = String.valueOf(new Date().getTime());
         jedis = new Jedis("localhost");
         if (jedis.exists(STARTTIME)) {
-            LogstashLogger.INSTANCE.message("Exiting redundant ValveGroupSlave");
             jedis.close();
             System.exit(0);
         }
@@ -128,7 +127,6 @@ public class ValveGroupSlave implements SerialPortEventListener {
         if (oEvent.getEventType() == SerialPortEvent.DATA_AVAILABLE) {
             try {
                 String inputLine = input.readLine();
-System.out.println("hoi " + inputLine);
                 if (inputLine.startsWith("log:")) {
                     LogstashLogger.INSTANCE.message("iot-furnace-controller-" + iotId, inputLine.substring(4).trim());
                 } else if (StringUtils.countMatches(inputLine, ":") > 1) {

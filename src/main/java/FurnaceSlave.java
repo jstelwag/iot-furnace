@@ -26,10 +26,9 @@ public class FurnaceSlave implements SerialPortEventListener {
      */
     private BufferedReader input;
     private SerialPort serialPort;
+    private Jedis jedis;
 
     private final String iotId;
-
-    Jedis jedis;
 
     /** Milliseconds to block while waiting for port open */
     private static final int TIME_OUT = 2000;
@@ -40,7 +39,6 @@ public class FurnaceSlave implements SerialPortEventListener {
         startTime = String.valueOf(new Date().getTime());
         jedis = new Jedis("localhost");
         if (jedis.exists(STARTTIME)) {
-            LogstashLogger.INSTANCE.message("Exiting redundant FurnaceSlave");
             jedis.close();
             System.exit(0);
         }

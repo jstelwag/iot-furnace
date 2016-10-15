@@ -31,7 +31,7 @@
 // The ethernet shield uses pins 10, 11, 12, and 13 for SPI communication
 // Pin 4 is used to communicate with the SD card (unused)
 const byte ONE_WIRE_PIN = 2;
-const byte FLOW_VALVE_RELAY_PIN = 5;   // a three way valve
+const byte BOILER_VALVE_RELAY_PIN = 5;   // a three way valve
 const byte FURNACE_BOILER_RELAY_PIN = 6;  // relay to set the furnace in boiler mode
 const byte FURNACE_HEATING_RELAY_PIN = 7;  // relay to set the furnace in heating mode
 const byte PUMP_RELAY_PIN = 8;  // relay to set the pump
@@ -46,9 +46,9 @@ boolean sensorsReady = false;
 DeviceAddress boilerSensorAddress = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
 double Tboiler;
 
-boolean furnaceState = false;  // state == false is normal heating mode
-boolean flowValveState = false; // valve == false is normal heating mode
-boolean furnaceHeatingState = true;
+boolean furnaceBoilerState = false;  // state == false is normal heating mode
+boolean boilerValveState = false; // valve == false is normal heating mode
+boolean furnaceHeatingState = false;
 boolean pumpState = false;
 
 const long DISCONNECT_TIMOUT = 180000;
@@ -60,12 +60,12 @@ const float BOILER_STOP_TEMP = 56.0; // Depends on the furnace setting, Nefit is
 
 void setup() {
   Serial.begin(9600);
-  pinMode(FLOW_VALVE_RELAY_PIN, OUTPUT);
+  pinMode(BOILER_VALVE_RELAY_PIN, OUTPUT);
   pinMode(FURNACE_BOILER_RELAY_PIN, OUTPUT);
   pinMode(FURNACE_HEATING_RELAY_PIN, OUTPUT);
   pinMode(PUMP_RELAY_PIN, OUTPUT);
-  digitalWrite(FURNACE_BOILER_RELAY_PIN, !furnaceState);
-  digitalWrite(FLOW_VALVE_RELAY_PIN, !flowValveState);
+  digitalWrite(FURNACE_BOILER_RELAY_PIN, !furnaceBoilerState);
+  digitalWrite(BOILER_VALVE_RELAY_PIN, !boilerValveState);
   digitalWrite(FURNACE_HEATING_RELAY_PIN, !furnaceHeatingState);
   digitalWrite(PUMP_RELAY_PIN, !pumpState);
   lastConnectTime = millis(); //assume connection has been successful
@@ -87,44 +87,88 @@ void loop() {
 
 void furnaceControl() {
   if (Tboiler < BOILER_START_TEMP) {
-    if (furnaceState) {
+    if (furnaceBoilerState) {
       //Furnace is already on
     } else {
-      flowValveState = true;
-      pumpState = false;
-      digitalWrite(FLOW_VALVE_RELAY_PIN, !flowValveState);
-      digitalWrite(PUMP_RELAY_PIN, !pumpState);
-      delay(2000); // wait for the valve to switch
-      furnaceState = true;
-      digitalWrite(FURNACE_BOILER_RELAY_PIN, !furnaceState);
-      Serial.println(F("log: switched furnace on"));
+      setFurnaceHeating(false);
+      delay(2000);
+      setPump(false);
+      setBoilerValve(true);
+      delay(3000); // wait for the valve to switch
+      setFurnaceBoiler(true);
+      Serial.println(F("log: switched furnace boiler on"));
     }
-  } else if (Tboiler < BOILER_STOP_TEMP && furnaceState) {
+  } else if (Tboiler < BOILER_STOP_TEMP && furnaceBoilerState) {
     //Keep the furnace buring
   } else {
-    if (!furnaceState) {
+    if (!furnaceBoilerState) {
       //Furnace us already off
     } else {
-      furnaceState = false;
-      digitalWrite(FURNACE_BOILER_RELAY_PIN, !furnaceState);
+      setFurnaceBoiler(false);
       delay(60000); //Let the last heat flow out
-      flowValveState = false;
-      digitalWrite(FLOW_VALVE_RELAY_PIN, !flowValveState);
-      Serial.println(F("log: switched furnace off"));
+      setBoilerValve(false);
+      Serial.println(F("log: switched furnace boiler off"));
     }
+  }
+}
+
+void setFurnaceBoiler(boolean state) {
+  furnaceBoilerState = state;
+  if (furnaceBoilerState) {
+    // Force pump shutdown and boilerValve set
+    setPump(false);
+    setBoilerValve(true);
+  }
+  if (digitalRead(FURNACE_BOILER_RELAY_PIN) == furnaceBoilerState) {
+    digitalWrite(FURNACE_BOILER_RELAY_PIN, !furnaceBoilerState);
+    Serial.println(F("log: changed furnace boiler state"));
+  }  
+}
+
+void setBoilerValve(boolean state) {
+  if (state && (furnaceHeatingState || furnaceBoilerState)) {
+    Serial.println(F("log: ignoring valve change when furnace is on"));
+  } else {
+    boilerValveState = state;
+    if (digitalRead(BOILER_VALVE_RELAY_PIN) == boilerValveState) {
+      digitalWrite(BOILER_VALVE_RELAY_PIN, !boilerValveState);
+      Serial.println(F("log: changed boiler valve state"));
+    }
+  }
+}
+void setFurnaceHeating(boolean state) {
+  furnaceHeatingState = state;
+  // Force pump shutdown
+  if (!furnaceHeatingState) {
+    setPump(false);
+  }
+  if (digitalRead(FURNACE_HEATING_RELAY_PIN) == furnaceHeatingState) {
+    digitalWrite(FURNACE_HEATING_RELAY_PIN, !furnaceHeatingState);
+    Serial.println(F("log: changed furnace heating state"));
+  }
+}
+
+void setPump(boolean state) {
+  if (!furnaceHeatingState && state) {
+    Serial.println(F("log:ignoring request to start pump while furnace is off"));
+  } else if (boilerValveState && state) {
+    Serial.println(F("log:ignoring request to start pump while boiler valve is on"));
+  } else {
+    pumpState = state;
+    if (digitalRead(PUMP_RELAY_PIN) == pumpState) {
+      digitalWrite(PUMP_RELAY_PIN, !pumpState);
+      Serial.println(F("log: changed pump state"));
+    }    
   }
 }
 
 void furnaceHeatingControl() {
   if (lastConnectTime + DISCONNECT_TIMOUT < millis()) {
     //Connection lost, go to native mode
-    //TODO set to true
-    furnaceHeatingState = true;
-    pumpState = false;
+    setPump(false);
+    setFurnaceHeating(true);
     Serial.println(F("log:not receiving from master"));
   }
-  digitalWrite(FURNACE_HEATING_RELAY_PIN, !furnaceHeatingState);
-  digitalWrite(PUMP_RELAY_PIN, !pumpState);
 }
 
 /**
@@ -139,19 +183,19 @@ void readSensors() {
 }
 
 void logMaster() {
-  Serial.print(furnaceState ? "1:" : "0:");
+  Serial.print(furnaceBoilerState ? "1:" : "0:");
   Serial.println(Tboiler);
 }
 
 void receiveFromMaster() {
   //line format: [furnace: T|F][pump: T|F]
-  char receivedFurnaceState, receivedPumpState;
+  boolean receivedFurnaceState, receivedPumpState;
   short i = 0;
   while (Serial.available()) {
     if (i == 0) {
-      receivedFurnaceState = Serial.read();
+      receivedFurnaceState = (Serial.read() == 'T');
     } else if (i == 1) {
-      receivedPumpState = Serial.read();
+      receivedPumpState = (Serial.read() == 'T');
     } else {
       Serial.read();
     }
@@ -160,8 +204,8 @@ void receiveFromMaster() {
 
   if (i == 2) {
     lastConnectTime = millis();
-    furnaceHeatingState = (receivedFurnaceState == 'T');
-    pumpState = (receivedPumpState == 'T');
+    setFurnaceHeating(receivedFurnaceState);
+    setPump(receivedPumpState);
   } else if (i > 0) {
     Serial.println(F("log: received unexpected master command"));
     Serial.end();
