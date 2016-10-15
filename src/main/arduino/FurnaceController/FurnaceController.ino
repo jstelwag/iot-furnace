@@ -196,7 +196,10 @@ void setupSensors() {
     }
     if (sensorCount != 1) {
       Serial.println("log: ERROR: unexpected amount of sensors");
+      delay(30000);
     }
+  } else {
+    sensorsReady = true;
   }
 }
 

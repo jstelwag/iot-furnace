@@ -129,11 +129,10 @@ public class ValveGroupSlave implements SerialPortEventListener {
                 String inputLine = input.readLine();
                 if (inputLine.startsWith("log:")) {
                     LogstashLogger.INSTANCE.message("iot-furnace-controller-" + iotId, inputLine.substring(4).trim());
-                } else if (StringUtils.countMatches(inputLine, ":") == 1) {
+                } else if (StringUtils.countMatches(inputLine, ":") > 1) {
                     //Forward state message from controller
                     String response = Request.Post("http://" + monitorIp +":" + monitorPort + "/furnace/koetshuis_kelder/")
                             .bodyString(inputLine, ContentType.DEFAULT_TEXT).execute().returnContent().asString();
-
                     try {
                         PrintWriter out = new PrintWriter(serialPort.getOutputStream());
                         out.print(response);
@@ -144,7 +143,7 @@ public class ValveGroupSlave implements SerialPortEventListener {
                         System.exit(0);
                     }
                 } else {
-                    LogstashLogger.INSTANCE.message("ERROR: received garbage from the Furnace micro controller: " + inputLine);
+                    LogstashLogger.INSTANCE.message("ERROR: received garbage from the ValveGroup micro controller: " + inputLine);
                 }
             } catch (IOException e) {
                 LogstashLogger.INSTANCE.message("ERROR: problem reading serial input from USB, exiting " + e.toString());

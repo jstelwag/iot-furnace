@@ -14,7 +14,7 @@ sudo apt-get -y install openjdk-7-jdk maven
 sudo apt-get -y install librxtx-java
 
 cat <<EOF >iot.conf
-iot.id=kasteel_zolder|kasteel_kelder
+iot.id=kasteel_zolder
 influx.ip=192.168.
 influx.port=8087
 usb.furnace=/dev/ttyUSB0
