@@ -8,12 +8,15 @@ public class LogstashLogger {
 
     public final static LogstashLogger INSTANCE = new LogstashLogger();
 
+    public final String iotId;
+
     InetAddress host;
     final int port;
 
     private LogstashLogger() {
         final Properties properties = new Properties();
         port = Integer.parseInt(properties.prop.getProperty("logstash.port"));
+        iotId = properties.prop.getProperty("iot.id");
 
         try {
             host = InetAddress.getByName(properties.prop.getProperty("logstash.ip"));
@@ -23,7 +26,7 @@ public class LogstashLogger {
     }
 
     public void message(String line) {
-        message("iot-furnace", line);
+        message("iot-furnace-" + iotId, line);
     }
 
     public void message(String who, String line) {

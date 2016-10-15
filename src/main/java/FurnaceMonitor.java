@@ -9,6 +9,7 @@ import java.io.IOException;
 public class FurnaceMonitor {
     private final String monitorIp;
     private final int monitorPort;
+    private final String iotId;
 
     public static final String FURNACE_KEY = "furnace.state";
     public static final String PUMP_KEY = "furnace.pumpState";
@@ -18,13 +19,14 @@ public class FurnaceMonitor {
         Properties properties = new Properties();
         monitorIp = properties.prop.getProperty("monitor.ip");
         monitorPort = Integer.parseInt(properties.prop.getProperty("monitor.port"));
+        iotId = properties.prop.getProperty("iot.id");
     }
 
 
     public void run() {
         Jedis jedis = new Jedis("localhost");
         try {
-            String furnaceResponse = Request.Get("http://" + monitorIp +":" + monitorPort + "/furnace/koetshuis_kelder/")
+            String furnaceResponse = Request.Get("http://" + monitorIp +":" + monitorPort + "/furnace/" + iotId + "/")
                     .execute().returnContent().asString();
             if (furnaceResponse.contains("furnace\"=\"ON")) {
                 jedis.setex(FURNACE_KEY, TTL, "ON");
@@ -50,5 +52,4 @@ public class FurnaceMonitor {
         }
         jedis.close();
     }
-
 }

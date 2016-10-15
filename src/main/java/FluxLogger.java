@@ -25,7 +25,7 @@ public class FluxLogger implements Closeable {
             host = InetAddress.getByName(properties.prop.getProperty("influx.ip"));
             port = Integer.parseInt(properties.prop.getProperty("influx.port"));
         } catch (UnknownHostException e) {
-            LogstashLogger.INSTANCE.message("ERROR: trying to set up InluxDB client for unknown host " + e.toString());
+            LogstashLogger.INSTANCE.message("ERROR: trying to set up InfluxDB client for unknown host " + e.toString());
             throw e;
         }
         try {

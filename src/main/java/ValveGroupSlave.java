@@ -3,10 +3,11 @@ import gnu.io.SerialPort;
 import gnu.io.SerialPortEvent;
 import gnu.io.SerialPortEventListener;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.client.fluent.Request;
+import org.apache.http.entity.ContentType;
 import redis.clients.jedis.Jedis;
 
 import java.io.*;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.Enumeration;
 
@@ -14,11 +15,11 @@ import java.util.Enumeration;
 /**
  * Created by Jaap on 25-7-2016.
  */
-public class FurnaceSlave implements SerialPortEventListener {
+public class ValveGroupSlave implements SerialPortEventListener {
 
     private final static int TTL = 60;
     private final String startTime;
-    public final static String STARTTIME = "furnaceslave.starttime";
+    public final static String STARTTIME = "valvegroupslave.starttime";
     /**
      * A BufferedReader which will be fed by a InputStreamReader
      * converting the bytes into characters
@@ -27,20 +28,22 @@ public class FurnaceSlave implements SerialPortEventListener {
     private BufferedReader input;
     private SerialPort serialPort;
 
-    private final String iotId;
+    private Jedis jedis;
 
-    Jedis jedis;
+    private final String iotId;
+    private final String monitorIp;
+    private final int monitorPort;
 
     /** Milliseconds to block while waiting for port open */
     private static final int TIME_OUT = 2000;
     /** Default bits per second for COM port. */
     private static final int DATA_RATE = 9600;
 
-    public FurnaceSlave() {
+    public ValveGroupSlave() {
         startTime = String.valueOf(new Date().getTime());
         jedis = new Jedis("localhost");
         if (jedis.exists(STARTTIME)) {
-            LogstashLogger.INSTANCE.message("Exiting redundant FurnaceSlave");
+            LogstashLogger.INSTANCE.message("Exiting redundant ValveGroupSlave");
             jedis.close();
             System.exit(0);
         }
@@ -49,23 +52,25 @@ public class FurnaceSlave implements SerialPortEventListener {
         jedis.close();
 
         Properties prop = new Properties();
-        iotId = prop.prop.getProperty("iot.id");
         // the next line is for Raspberry Pi and
         // gets us into the while loop and was suggested here was suggested http://www.raspberrypi.org/phpBB3/viewtopic.php?f=81&t=32186
-        System.setProperty("gnu.io.rxtx.SerialPorts", prop.prop.getProperty("usb.furnace"));
+        System.setProperty("gnu.io.rxtx.SerialPorts", prop.prop.getProperty("usb.valvegroup"));
+        iotId = prop.prop.getProperty("iot.id");
+        monitorIp = prop.prop.getProperty("monitor.ip");
+        monitorPort = Integer.parseInt(prop.prop.getProperty("monitor.port"));
 
         CommPortIdentifier portId = null;
         Enumeration portEnum = CommPortIdentifier.getPortIdentifiers();
 
         while (portEnum.hasMoreElements()) {
             CommPortIdentifier currPortId = (CommPortIdentifier) portEnum.nextElement();
-            if (currPortId.getName().equals(prop.prop.getProperty("usb.furnace"))) {
+            if (currPortId.getName().equals(prop.prop.getProperty("usb.valvegroup"))) {
                 portId = currPortId;
                 break;
             }
         }
         if (portId == null) {
-            LogstashLogger.INSTANCE.message("ERROR: could not find USB at " + prop.prop.getProperty("usb.furnace"));
+            LogstashLogger.INSTANCE.message("ERROR: could not find USB at " + prop.prop.getProperty("usb.valvegroup"));
             close();
             System.exit(0);
         }
@@ -125,40 +130,18 @@ public class FurnaceSlave implements SerialPortEventListener {
                 if (inputLine.startsWith("log:")) {
                     LogstashLogger.INSTANCE.message("iot-furnace-controller-" + iotId, inputLine.substring(4).trim());
                 } else if (StringUtils.countMatches(inputLine, ":") == 1) {
-                    jedis.setex("boiler120.state", Properties.redisExpireSeconds, inputLine.split(":")[0]);
-                    if (!TemperatureSensor.isOutlier(inputLine.split(":")[1])) {
-                        jedis.setex("boiler120.Tbottom", Properties.redisExpireSeconds, inputLine.split(":")[1]);
-                    }
+                    //Forward state message from controller
+                    String response = Request.Post("http://" + monitorIp +":" + monitorPort + "/furnace/koetshuis_kelder/")
+                            .bodyString(inputLine, ContentType.DEFAULT_TEXT).execute().returnContent().asString();
 
-                    boolean furnaceState;
-                    if (jedis.exists(FurnaceMonitor.FURNACE_KEY)) {
-                        furnaceState = "ON".equals(jedis.get(FurnaceMonitor.FURNACE_KEY));
-                    } else {
-                        Calendar now = Calendar.getInstance();
-                        LogstashLogger.INSTANCE.message("No iot-monitor furnace state available, using month based default");
-                        furnaceState = (now.get(Calendar.MONTH) < 4 || now.get(Calendar.MONTH) > 9) &&
-                                (now.get(Calendar.HOUR) < 23 && now.get(Calendar.HOUR) > 5);
-                    }
-
-                    boolean pumpState = false;
-                    if (jedis.exists(FurnaceMonitor.PUMP_KEY)) {
-                        pumpState = "ON".equals(jedis.get(FurnaceMonitor.PUMP_KEY));
-                    } else {
-                        LogstashLogger.INSTANCE.message("No iot-monitor pump state available");
-                    }
                     try {
-                        serialPort.getOutputStream().write(furnaceState ? 'T' : 'F');
-                        serialPort.getOutputStream().write(pumpState ? 'T' : 'F');
-                        serialPort.getOutputStream().flush();
+                        PrintWriter out = new PrintWriter(serialPort.getOutputStream());
+                        out.print(response);
+                        out.flush();
                     } catch (IOException e) {
-                        LogstashLogger.INSTANCE.message("ERROR: writing to furnace controller");
+                        LogstashLogger.INSTANCE.message("ERROR: writing to ValveGroup controller");
                         close();
                         System.exit(0);
-                    }
-                    try (FluxLogger flux = new FluxLogger()) {
-                        flux.send(iotId + " state=" + (furnaceState ? "1i" : "0i"));
-                        //todo set if pump exists
-                        flux.send(iotId + " pumpState=" + (pumpState ? "1i" : "0i"));
                     }
                 } else {
                     LogstashLogger.INSTANCE.message("ERROR: received garbage from the Furnace micro controller: " + inputLine);
@@ -173,7 +156,7 @@ public class FurnaceSlave implements SerialPortEventListener {
     }
 
     public void run() {
-        LogstashLogger.INSTANCE.message("Starting FurnaceSlave");
+        LogstashLogger.INSTANCE.message("Starting ValveGroupSlave");
         Thread t = new Thread() {
             public void run() {
                 try {

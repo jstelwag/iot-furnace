@@ -11,6 +11,9 @@ public class Main {
                 case "FurnaceSlave":
                     new FurnaceSlave().run();
                     break;
+                case "ValveGroupSlave":
+                    new ValveGroupSlave().run();
+                    break;
                 case "FurnaceMonitor":
                     new FurnaceMonitor().run();
                     break;
