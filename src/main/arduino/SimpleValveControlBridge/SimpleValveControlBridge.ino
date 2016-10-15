@@ -67,6 +67,7 @@ void setup(void) {
 
 void loop(void) {
   if (millis() > lastPostTime + POSTING_INTERVAL || millis() < lastPostTime) {
+    lastPostTime  = millis();
     request();
   }
   receive();
@@ -87,7 +88,7 @@ void loop(void) {
       receiveBuffer[b] = prop.defaultControlStatus[b];
     }
     setValves();
-    delay(5000);
+    delay(30000);
   }
 }
 
@@ -123,8 +124,6 @@ void request() {
   }
   Serial.print(comma);
   Serial.println(checksum);
-
-  lastPostTime = millis();
 }
 
 void setValves() {

@@ -124,9 +124,11 @@ public class ValveGroupSlave implements SerialPortEventListener {
             System.exit(0);
         }
         jedis.setex(STARTTIME, TTL, startTime);
+        jedis.close();
         if (oEvent.getEventType() == SerialPortEvent.DATA_AVAILABLE) {
             try {
                 String inputLine = input.readLine();
+System.out.println("hoi " + inputLine);
                 if (inputLine.startsWith("log:")) {
                     LogstashLogger.INSTANCE.message("iot-furnace-controller-" + iotId, inputLine.substring(4).trim());
                 } else if (StringUtils.countMatches(inputLine, ":") > 1) {
@@ -151,7 +153,6 @@ public class ValveGroupSlave implements SerialPortEventListener {
                 System.exit(0);
             }
         }
-        jedis.close();
     }
 
     public void run() {
