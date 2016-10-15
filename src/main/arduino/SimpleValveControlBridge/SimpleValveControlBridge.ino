@@ -62,7 +62,7 @@ void setup(void) {
 #endif
 
   lastConnectionTime = millis();
-  Serial.println(F("started"));
+  Serial.println(F("log:started"));
 }
 
 void loop(void) {
