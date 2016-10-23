@@ -122,10 +122,15 @@ public class FurnaceSlave implements SerialPortEventListener {
                 String inputLine = input.readLine();
                 if (inputLine.startsWith("log:")) {
                     LogstashLogger.INSTANCE.message("iot-furnace-controller-" + iotId, inputLine.substring(4).trim());
-                } else if (StringUtils.countMatches(inputLine, ":") == 1) {
+                } else if (StringUtils.countMatches(inputLine, ":") >= 1) {
                     jedis.setex("boiler120.state", Properties.redisExpireSeconds, inputLine.split(":")[0]);
                     if (!TemperatureSensor.isOutlier(inputLine.split(":")[1])) {
                         jedis.setex("boiler120.Tbottom", Properties.redisExpireSeconds, inputLine.split(":")[1]);
+                    }
+                    if (StringUtils.countMatches(inputLine, ":") > 1) {
+                        if (!TemperatureSensor.isOutlier(inputLine.split(":")[2])) {
+                            jedis.setex("auxiliary.temperature", Properties.redisExpireSeconds, inputLine.split(":")[2]);
+                        }
                     }
 
                     boolean furnaceState;

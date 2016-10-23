@@ -47,10 +47,6 @@ void setup(void) {
   Serial.begin(9600);
 
 #ifdef flash_props
-  //ValveProperties pIn = {"koetshuis_kelder", 9, {true, true, true, false, false, false, true, false, false, false, false, false}};
-  //ValveProperties pIn = {"koetshuis_trap_15L", 8, {false, false, true, true, true, true, false, true, false, false, false, true}};
-  //ValveProperties pIn = {"koetshuis_trap_15R", 7, {false, false, false, false, false, false, false, false, false, false, false, false}};
-  //ValveProperties pIn = {"koetshuis_trap_6", 6, {true, true, true, true, true, false, false, false, false, false, false, false}};
   ValveProperties pIn = {"kasteel_zolder", 8, {true, true, true, true, false, false, false, true}};
   EEPROM.put(0, pIn);
 #endif

@@ -41,10 +41,11 @@ const float MAX_TEMP_CHANGE_THRESHOLD_85 = 0.2;
 //Thermometer devices DALLAS DS18B20+ with the OneWire protocol
 OneWire oneWire(ONE_WIRE_PIN);
 DallasTemperature sensors(&oneWire);
-boolean sensorsReady = false;
+byte sensorCount = 0;
 
 DeviceAddress boilerSensorAddress = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
-double Tboiler;
+DeviceAddress auxillarySensorAddress = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
+double Tboiler, Tauxillary;
 
 boolean furnaceBoilerState = false;  // state == false is normal heating mode
 boolean boilerValveState = false; // valve == false is normal heating mode
@@ -112,6 +113,25 @@ void furnaceControl() {
   }
 }
 
+
+void furnaceHeatingControl() {
+  if (lastConnectTime + DISCONNECT_TIMOUT < millis()) {
+    //Connection lost, go to native mode
+    setPump(false);
+    if (sensorCount > 1) {
+      //There is an auxillary sensor, use it
+      if (Tauxillary < 15.0) {
+        setFurnaceHeating(true);
+      } else {
+        setFurnaceHeating(false);
+      }
+    } else {
+      setFurnaceHeating(true);
+    }
+    Serial.println(F("log:not receiving from master"));
+  }
+}
+
 void setFurnaceBoiler(boolean state) {
   furnaceBoilerState = state;
   if (furnaceBoilerState) {
@@ -162,15 +182,6 @@ void setPump(boolean state) {
   }
 }
 
-void furnaceHeatingControl() {
-  if (lastConnectTime + DISCONNECT_TIMOUT < millis()) {
-    //Connection lost, go to native mode
-    setPump(false);
-    setFurnaceHeating(true);
-    Serial.println(F("log:not receiving from master"));
-  }
-}
-
 /**
 * Set the senso readings in their global variables.
 * Remove the 85C error sensors sometimes return.
@@ -180,11 +191,19 @@ void readSensors() {
   sensors.requestTemperatures();
   
   Tboiler = filterSensorTemp(sensors.getTempC(boilerSensorAddress), Tboiler);
+  if (sensorCount > 1) {
+    Tauxillary = filterSensorTemp(sensors.getTempC(auxillarySensorAddress), Tauxillary);
+  }
 }
 
 void logMaster() {
   Serial.print(furnaceBoilerState ? "1:" : "0:");
-  Serial.println(Tboiler);
+  Serial.print(Tboiler);
+  if (sensorCount > 1) {
+    Serial.print(':');
+    Serial.print(Tauxillary);
+  }
+  Serial.println();
 }
 
 void receiveFromMaster() {
@@ -229,21 +248,30 @@ float filterSensorTemp(float rawSensorTemp, float currentTemp) {
 // ######################################## SETUP
 
 void setupSensors() {
-  if (!sensorsReady) {
+  if (sensorCount == 0) {
     byte addr[8];
-    byte sensorCount = 0;
     while (oneWire.search(addr)) {
       for (byte i = 0; i < 8; i++) {
-        boilerSensorAddress[i] = addr[i];
+        if (sensorCount == 0) {
+          boilerSensorAddress[i] = addr[i];
+        } else {
+          auxillarySensorAddress[i] = addr[i];
+        }
+        Serial.print(addr[i]);
+      }
+      Serial.print(':');
+      if (sensorCount == 0) {
+        Serial.println(sensors.getTempC(boilerSensorAddress));
+      } else {
+        Serial.println(sensors.getTempC(auxillarySensorAddress));
       }
       sensorCount++;
     }
-    if (sensorCount != 1) {
+    if (sensorCount != 1 && sensorCount != 2) {
       Serial.println("log: ERROR: unexpected amount of sensors");
       delay(30000);
+      sensorCount = 0;
     }
-  } else {
-    sensorsReady = true;
   }
 }
 

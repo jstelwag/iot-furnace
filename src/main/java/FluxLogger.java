@@ -14,6 +14,7 @@ public class FluxLogger implements Closeable {
     private final int port;
     private Jedis jedis;
     private final DatagramSocket socket;
+    private final String iotId;
 
     public FluxLogger() throws SocketException, UnknownHostException {
         final Properties properties = new Properties();
@@ -21,6 +22,7 @@ public class FluxLogger implements Closeable {
             LogstashLogger.INSTANCE.message("ERROR: influx.ip setting missing from properties");
             throw new UnknownHostException("Please set up influx.ip and port in iot.conf");
         }
+        iotId = properties.prop.getProperty("iot.id");
         try {
             host = InetAddress.getByName(properties.prop.getProperty("influx.ip"));
             port = Integer.parseInt(properties.prop.getProperty("influx.port"));
@@ -63,6 +65,9 @@ public class FluxLogger implements Closeable {
         }
         if (jedis.exists("pipe.Tslope")) {
             send("pipe.velocity slope=" + jedis.get("pipe.Tslope") + ",deviation=" + jedis.get("pipe.TstandardDeviation"));
+        }
+        if (jedis.exists("auxiliary.temperature")) {
+            send("environment.temperature " + iotId + "=" + jedis.get("auxiliary.temperature"));
         }
     }
 
