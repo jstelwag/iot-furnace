@@ -35,15 +35,15 @@ EOF
 sudo mv iot-upgrade /usr/local/bin
 sudo chmod +x /usr/local/bin/iot-upgrade
 
-cat <<EOF >iot-runtime
+cat <<EOF >iot-furnace
 #!/bin/bash
-sh /home/pi/iot-furnace/src/main/bash/iot-runtime $1
+sh /home/pi/iot-furnace/src/main/bash/iot-furnace $1
 exit 0
 EOF
-sudo mv iot-runtime /usr/local/bin
-sudo chmod +x /usr/local/bin/iot-runtime
+sudo mv iot-furnace /usr/local/bin
+sudo chmod +x /usr/local/bin/iot-furnace
 
-iot-upgrade
+iot-upgrade-furnace
 
 sudo nano /etc/iot.conf
 

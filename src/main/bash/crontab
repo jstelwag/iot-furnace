@@ -3,12 +3,12 @@ SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 HOME=/home/pi
 
-* * * * * iot-runtime FurnaceSlave >> $HOME/runtime.log 2>&1
-* * * * * iot-runtime ValveGroupSlave >> $HOME/runtime.log 2>&1
-* * * * * iot-runtime FluxLogger >> $HOME/runtime.log 2>&1
-* * * * * (sleep 30 && iot-runtime FluxLogger >> $HOME/runtime.log 2>&1)
-* * * * * iot-runtime FurnaceMonitor >> $HOME/runtime.log 2>&1
+* * * * * iot-furnace FurnaceSlave >> $HOME/furnace.log 2>&1
+* * * * * iot-furnace ValveGroupSlave >> $HOME/furnace.log 2>&1
+* * * * * iot-furnace FluxLogger >> $HOME/furnace.log 2>&1
+* * * * * (sleep 30 && iot-furnace FluxLogger >> $HOME/furnace.log 2>&1)
+* * * * * iot-furnace FurnaceMonitor >> $HOME/furnace.log 2>&1
 
-0 3 * * * (iot-upgrade && sudo reboot) > $HOME/upgrade.log 2>&1
+0 3 * * * (iot-upgrade-furnace && sudo reboot) > $HOME/upgrade.log 2>&1
 
 # needs newline at the end

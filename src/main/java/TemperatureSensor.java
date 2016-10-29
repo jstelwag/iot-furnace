@@ -8,15 +8,26 @@ import java.util.Map;
  */
 public class TemperatureSensor {
 
-    public final static Map<String, String[]> sensors = new HashMap<>();
-
-    public static final String SOLAR_STATE = "solar.state";
+    public final static Map<String, String> sensors = new HashMap<>();
+    public final static String boiler;
 
     static {
-        //sensors.put("boiler500", new String[]{"Ttop", "Tmiddle", "Tbottom"});
-        //sensors.put("boiler200", new String[]{"Ttop"});
-        //sensors.put("pipe", new String[]{"TflowIn", "TflowOut"});
-        sensors.put("boiler120", new String[]{"Tbottom"});
+        Properties prop = new Properties();
+        String iotId = prop.prop.getProperty("iot.id");
+        switch (iotId) {
+            case "koetshuis_kelder":
+                boiler = "boiler200";
+                sensors.put(boiler, "Ttop");
+                break;
+            case "kasteel_zolder":
+                boiler = "boiler120";
+                sensors.put(boiler, "Tbottom");
+                break;
+            default:
+                boiler = "error";
+                LogstashLogger.INSTANCE.message("ERROR, undefined iot.id (" + iotId + "( for Temperature Sensor");
+                System.exit(0);
+        }
     }
 
     public static boolean isOutlier(String temperature) {

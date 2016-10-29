@@ -51,20 +51,16 @@ public class FluxLogger implements Closeable {
     private void logTemperatures() {
         for (String sensorLocation : TemperatureSensor.sensors.keySet()) {
             String line = sensorLocation + '.' + "temperature ";
-            for (String sensorPosition : TemperatureSensor.sensors.get(sensorLocation)) {
-                String key = sensorLocation + '.' + sensorPosition;
-                if (jedis.exists(key)) {
-                    line += (line.contains("=") ? "," : "") + sensorPosition + '=' + jedis.get(key);
-                } else {
-                    LogstashLogger.INSTANCE.message("WARN: no temperature for " + key);
-                }
+            String jedisKey = sensorLocation + ".temperature";
+            if (jedis.exists(jedisKey)) {
+                line += (line.contains("=") ? "," : "") + TemperatureSensor.sensors.get(sensorLocation)
+                        + '=' + jedis.get(jedisKey);
+            } else {
+                LogstashLogger.INSTANCE.message("WARN: no temperature for " + sensorLocation);
             }
             if (line.contains("=")) {
                 send(line);
             }
-        }
-        if (jedis.exists("pipe.Tslope")) {
-            send("pipe.velocity slope=" + jedis.get("pipe.Tslope") + ",deviation=" + jedis.get("pipe.TstandardDeviation"));
         }
         if (jedis.exists("auxiliary.temperature")) {
             send("environment.temperature " + iotId + "=" + jedis.get("auxiliary.temperature"));
@@ -72,9 +68,10 @@ public class FluxLogger implements Closeable {
     }
 
     private void logState() {
-        if (jedis.exists("boiler120.state")) {
-            String line = "boiler120.state value=" + jedis.get("boiler120.state");
-            send(line);
+        if (jedis.exists("boiler200.state")) {
+            send("boiler200.state value=" + jedis.get("boiler200.state"));
+        } else if (jedis.exists("boiler120.state")) {
+            send("boiler120.state value=" + jedis.get("boiler120.state"));
         } else {
             LogstashLogger.INSTANCE.message("ERROR: there is no state in Redis");
         }

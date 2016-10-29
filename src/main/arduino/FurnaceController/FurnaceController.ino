@@ -57,7 +57,7 @@ const long POSTING_INTERVAL = 30000;
 long lastConnectTime, lastPostTime;
 
 const float BOILER_START_TEMP = 50.0;
-const float BOILER_STOP_TEMP = 56.0; // Depends on the furnace setting, Nefit is set to 60C, take a lower value for the boiler temperature.
+const float BOILER_STOP_TEMP = 60.0;
 
 void setup() {
   Serial.begin(9600);
@@ -129,6 +129,7 @@ void furnaceHeatingControl() {
       setFurnaceHeating(true);
     }
     Serial.println(F("log:not receiving from master"));
+    delay(30000);
   }
 }
 
