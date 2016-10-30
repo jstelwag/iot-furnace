@@ -26,11 +26,13 @@ monitor.port=8000
 EOF
 sudo mv iot.conf /etc
 
+cd /tmp
 cat <<EOF >iot-upgrade
 #!/bin/bash
 cd /home/pi/iot-furnace
 git pull
 sh src/main/bash/iot-upgrade
+/usr/bin/crontab /home/pi/iot-furnace/src/main/bash/crontab
 EOF
 sudo mv iot-upgrade /usr/local/bin
 sudo chmod +x /usr/local/bin/iot-upgrade
@@ -43,7 +45,8 @@ EOF
 sudo mv iot-furnace /usr/local/bin
 sudo chmod +x /usr/local/bin/iot-furnace
 
-iot-upgrade-furnace
+cd ~
+iot-upgrade
 
 sudo nano /etc/iot.conf
 

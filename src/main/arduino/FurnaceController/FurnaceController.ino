@@ -91,11 +91,14 @@ void furnaceControl() {
     if (furnaceBoilerState) {
       //Furnace is already on
     } else {
-      setFurnaceHeating(false);
-      delay(2000);
       setPump(false);
+      if (furnaceHeatingState) {
+        setFurnaceHeating(false);
+        Serial.println(F("log: waiting 4 min for pump to stop"));
+        delay(240000); // wait 4 minutes
+      }
       setBoilerValve(true);
-      delay(3000); // wait for the valve to switch
+      delay(5000); // wait for the valve to switch
       setFurnaceBoiler(true);
       Serial.println(F("log: switched furnace boiler on"));
     }
@@ -106,7 +109,8 @@ void furnaceControl() {
       //Furnace us already off
     } else {
       setFurnaceBoiler(false);
-      delay(60000); //Let the last heat flow out
+      Serial.println(F("log: waiting 2 min for pump to stop"));
+      delay(120000);
       setBoilerValve(false);
       Serial.println(F("log: switched furnace boiler off"));
     }

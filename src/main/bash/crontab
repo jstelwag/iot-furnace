@@ -9,6 +9,6 @@ HOME=/home/pi
 * * * * * (sleep 30 && iot-furnace FluxLogger >> $HOME/furnace.log 2>&1)
 * * * * * iot-furnace FurnaceMonitor >> $HOME/furnace.log 2>&1
 
-0 3 * * * (iot-upgrade-furnace && sudo reboot) > $HOME/upgrade.log 2>&1
+0 3 * * * (iot-upgrade && sudo reboot) > $HOME/upgrade.log 2>&1
 
 # needs newline at the end
