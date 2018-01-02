@@ -26,6 +26,7 @@
 */
 
 #define Ntest_relays // remove the NO to test the relays
+#define koetshuis_kelder
 
 const byte RELAY_START_PIN = 2;
 const byte MAX_VALVES = 16;
@@ -37,12 +38,14 @@ struct ValveProperties {
   uint8_t macAddress[6];
   IPAddress masterIP;
   uint16_t masterPort;
-  boolean defaultControlStatus[MAX_VALVES];
+  byte defaultControlStatus[MAX_VALVES];
 };
 
 boolean received = false;
 IPAddress masterIP(192, 168, 178, 18);
-ValveProperties prop = {"koetshuis_trap_15", 15, 22, {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED}, masterIP, 9999, {false, false, true, true, true, true, false, true, false, false, false, true, false, false, false, false}};
+//ValveProperties prop = {"koetshuis_trap_15", 15, 22, {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED}, masterIP, 9999, {false, false, true, true, true, true, false, true, false, false, false, true, false, false, false}};
+ValveProperties prop = {"koetshuis_kelder", 9, 0, {0xDE, 0xAD, 0xBE, 0xEF, 0xFA, 0xEB}, masterIP, 9999, {1, 1, 1, 0, 0, 0, 1, 0, 0}};
+//ValveProperties prop = {"koetshuis_trap_6", 6, {0xDE, 0xAD, 0xBE, 0xEF, 0xFA, 0xEB}, masterIP, 9999, {true, true, true, true, true, false}};
 
 EthernetClient client;
 long lastPostTime;
@@ -53,13 +56,25 @@ byte bufferPosition;
 
 void setup(void) {
   Serial.begin(9600);
-  dhcp(prop.macAddress);  
+  dhcp(prop.macAddress);
   setupValveRelayPins();
 
   #ifdef test_relays
     valveTest();
   #endif
   Serial.println(F("ready"));
+  defaults();
+  setValves();
+}
+
+void defaults() {
+  for (byte s = 0; s <= prop.valveCount; s++) {
+    if (relay[s] != prop.defaultControlStatus[s]) {
+      Serial.print(F("Changing relay "));
+      Serial.println(s+1);
+      relay[s] = prop.defaultControlStatus[s];
+    }
+  }
 }
 
 void loop(void) {
@@ -72,7 +87,7 @@ void loop(void) {
     if (checksum()) {
       for (byte s = 0; s <= prop.valveCount; s++) {
         if (relay[s] != receiveBuffer[s]) {
-          Serial.print(F("Changing valve "));
+          Serial.print(F("Changing relay "));
           Serial.println(s+1);
           relay[s] = receiveBuffer[s];
         }
@@ -116,11 +131,17 @@ void request() {
     client.print(prop.deviceId);
     client.print(comma);
     int checksum = 0;
-    for (byte s = 0; s <= prop.valveCount; s++) {
+    for (byte s = 0; s < prop.valveCount; s++) {
       checksum += relay[s];
       client.print(relay[s]);
       client.print(comma);
       Serial.print(relay[s]);
+    }
+    if (prop.pumpPin > 0) {
+      checksum += relay[prop.valveCount];
+      client.print(relay[prop.valveCount]);
+      client.print(comma);
+      Serial.print(relay[prop.valveCount]);
     }
     client.println(checksum);
     Serial.println(F("ed"));
@@ -128,12 +149,15 @@ void request() {
     Serial.println(F(" failed"));
     client.stop();
     Ethernet.maintain();
+    defaults();
+    setValves();
   }
   lastPostTime = millis();
   delay(1000);
 }
 
 boolean checksum() {
+/*
   byte checksum = 0;
   for (byte i = 0; i <= prop.valveCount; i++) {
     checksum += receiveBuffer[i];
@@ -153,13 +177,17 @@ boolean checksum() {
   Serial.print(F("/"));
   Serial.print(checksum);
   return false;
+  */
+  return true;
 }
 
 void setValves() {
   for (byte i = 0; i < prop.valveCount; i++) {
-    digitalWrite(findRelayPin(i), !relay[i]);
+    digitalWrite(findRelayPin(i), relayValue(i, relay[i]));
   }
-  digitalWrite(prop.pumpPin, !relay[prop.valveCount]);
+  if (prop.pumpPin > 0) {
+    digitalWrite(prop.pumpPin, relayValue(prop.pumpPin, relay[prop.valveCount]));
+  }
 }
 
 /**
@@ -169,11 +197,22 @@ void setValves() {
 * are reserved for other functions.
 */
 uint8_t findRelayPin(uint8_t valveNumber) { 
-  if (valveNumber + RELAY_START_PIN < 9) {
+  if (valveNumber + RELAY_START_PIN <= 9) {
     return valveNumber + RELAY_START_PIN;
   }
-  return valveNumber + RELAY_START_PIN + 5;
+  return valveNumber + RELAY_START_PIN + 4;
 }
+
+byte relayValue(uint8_t valveNumber, byte value) {
+#ifdef koetshuis_kelder
+  if (valveNumber == 0) {
+    return !value;
+  }
+#endif
+  return value;
+}
+
+
 
 // ######################################## SETUP
 void dhcp(uint8_t *macAddress) {
@@ -192,11 +231,11 @@ void setupValveRelayPins() {
     // There are 14 digital pins, where 0 and 1 are reserved and 2 is used for oneWire
     // The analog pins are available except A4 and A5 for I2C communications
     pinMode(findRelayPin(i), OUTPUT);
-    relay[i] = prop.defaultControlStatus[i];
-    digitalWrite(findRelayPin(i), !relay[i]);
   }
-  pinMode(prop.pumpPin, OUTPUT);
-  digitalWrite(prop.pumpPin, !false);
+  if (prop.pumpPin > 0) {
+    pinMode(prop.pumpPin, OUTPUT);
+    digitalWrite(prop.pumpPin, relayValue(prop.pumpPin, false));
+  }
 }
 // ######################################## /SETUP
 
@@ -205,25 +244,27 @@ void setupValveRelayPins() {
   void valveTest() {
     Serial.println(F("Testing valves ON"));
     for (byte i = 0; i < prop.valveCount; i++) {
-      digitalWrite(findRelayPin(i), !true);
+      digitalWrite(findRelayPin(i), relayValue(i, true));
     }
-    delay(10000);
+    delay(2000);
     Serial.println(F("Testing valves OFF"));
     for (byte i = 0; i < prop.valveCount; i++) {
-      digitalWrite(findRelayPin(i), !false);
+      digitalWrite(findRelayPin(i), relayValue(i, false));
     }
-    delay(5000);
+    delay(2000);
     for (byte i = 0; i < prop.valveCount; i++) {
       Serial.print(F("Testing valve "));
       Serial.println(i + 1);
-      digitalWrite(findRelayPin(i), !true);
+      digitalWrite(findRelayPin(i), relayValue(i, true));
       delay(1500);
-      digitalWrite(findRelayPin(i), !false);
+      digitalWrite(findRelayPin(i), relayValue(i, false));
     }
-    delay(500);
-    Serial.println(F("Testing pump valve"));
-    digitalWrite(prop.pumpPin, !true);
-    delay(500);
-    digitalWrite(prop.pumpPin, !false);
+    if (prop.pumpPin > 0) {
+      delay(500);
+      Serial.println(F("Testing pump valve"));
+      digitalWrite(prop.pumpPin, relayValue(prop.pumpPin, true));
+      delay(500);
+      digitalWrite(prop.pumpPin, relayValue(prop.pumpPin, false));
+    }
   }
 #endif

@@ -57,7 +57,7 @@ const long POSTING_INTERVAL = 30000;
 long lastConnectTime, lastPostTime;
 
 const float BOILER_START_TEMP = 50.0;
-const float BOILER_STOP_TEMP = 60.0;
+const float BOILER_STOP_TEMP = 56.5;
 
 void setup() {
   Serial.begin(9600);
