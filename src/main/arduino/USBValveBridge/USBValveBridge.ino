@@ -14,16 +14,14 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#include <EEPROM.h>
 
 /**
-* Valve controller for low temperature (LT) floor and wall heating system.
-* Bridges the master controller to the valves. Uses Ethernet / UDP to communicate with
-* the master what can be a RaspberryPi hanging in the network.
+* Valve bridge for low temperature (LT) floor and wall heating system.
+* Bridges the master controller to the valves. Uses USB serial to communicate with
+* a proxy (raspberry pi) who connects with the master controller (iot-monitor) via http.
 */
 
-#define ntest_relays // remove the NO to test the relays
-#define nflash_props // Writes property setting into eeprom memory
+#define test_relays // remove the NO to test the relays
 
 const byte RELAY_START_PIN = 3;
 const byte MAX_VALVES = 16;
@@ -31,60 +29,63 @@ const byte MAX_VALVES = 16;
 struct ValveProperties {
   char deviceId[20];
   byte valveCount;
-  boolean defaultControlStatus[MAX_VALVES];
+  byte defaultControlStatus[MAX_VALVES];
 };
 
 boolean received = false;
 
 unsigned long lastPostTime;
-unsigned long lastConnectionTime;
-const unsigned long POSTING_INTERVAL = 30000;
-const unsigned long LOST_CONNECTION_TIMEOUT = 120000;
+long lastSuccessTime;
+const long POSTING_INTERVAL = 30000;
+const long SUCCESS_THRESHOLD = 5*POSTING_INTERVAL;
 boolean receiveBuffer[MAX_VALVES + 5];
+boolean relay[MAX_VALVES];
 byte bufferPosition;
+
+ValveProperties prop = {"kasteel_zolder", 8, {1, 1, 1, 1, 0, 0, 0, 1}};
 
 void setup(void) {
   Serial.begin(9600);
-
-#ifdef flash_props
-  ValveProperties pIn = {"kasteel_zolder", 8, {true, true, true, true, false, false, false, true}};
-  EEPROM.put(0, pIn);
-#endif
-
   setupValveRelayPins();
 
 #ifdef test_relays
   valveTest();
 #endif
-
-  lastConnectionTime = millis();
+  defaults();
+  setValves();
   Serial.println(F("log:started"));
 }
 
 void loop(void) {
-  if (millis() > lastPostTime + POSTING_INTERVAL || millis() < lastPostTime) {
-    lastPostTime  = millis();
+  if (millis() > lastPostTime + POSTING_INTERVAL) {
     request();
   }
+  if (millis() > lastSuccessTime + SUCCESS_THRESHOLD) {
+    lastSuccessTime = millis();
+    defaults();
+    Serial.println(F("log: ERROR connection lost"));
+  }
+  if (millis() < lastPostTime) {
+    lastPostTime = 0;
+  }
+  if (millis() < lastSuccessTime) {
+    lastSuccessTime = 0;
+  }
+  
   receive();
 
   if (received) {
+    for (byte s = 0; s <= prop.valveCount; s++) {
+      if (relay[s] != receiveBuffer[s]) {
+        Serial.print(F("log:Changing relay "));
+        Serial.println(s+1);
+        relay[s] = receiveBuffer[s];
+      }
+    }
+
     setValves();
     received = false;
-    lastConnectionTime = millis();
-  }
-
-  if (millis() < lastConnectionTime) {
-    lastConnectionTime = millis(); //clock reset, also reset lastConnectionTime
-  } else if (millis() > lastConnectionTime + LOST_CONNECTION_TIMEOUT) {
-    Serial.println(F("log: lost connection mode"));
-    ValveProperties prop;
-    EEPROM.get(0, prop);
-    for (byte b = 0; b < prop.valveCount; b++) {
-      receiveBuffer[b] = prop.defaultControlStatus[b];
-    }
-    setValves();
-    delay(30000);
+    lastSuccessTime = millis();
   }
 }
 
@@ -106,9 +107,6 @@ void request() {
     receiveBuffer[b] = false;
   }
 
-  ValveProperties prop;
-  EEPROM.get(0, prop);
-  
   Serial.print(prop.deviceId);
   char comma[] = ":";
   int checksum = 0;
@@ -120,15 +118,24 @@ void request() {
   }
   Serial.print(comma);
   Serial.println(checksum);
+  lastPostTime = millis();
+}
+
+void defaults() {
+  for (byte s = 0; s <= prop.valveCount; s++) {
+    if (relay[s] != prop.defaultControlStatus[s]) {
+      Serial.print(F("log:Changing relay "));
+      Serial.println(s+1);
+      relay[s] = prop.defaultControlStatus[s];
+    }
+  }
 }
 
 void setValves() {
-  ValveProperties prop;
-  EEPROM.get(0, prop);
   byte c = 0;
   for (byte i = 0; i < prop.valveCount; i++) {
-    if (digitalRead(findRelayPin(i)) == receiveBuffer[i]) {
-      digitalWrite(findRelayPin(i), !receiveBuffer[i]);
+    if (digitalRead(findRelayPin(i)) == relay[i]) {
+      digitalWrite(findRelayPin(i), !relay[i]);
       c++;
     }
   }
@@ -151,13 +158,10 @@ uint8_t findRelayPin(uint8_t sensorNumber) {
 
 // ######################################## SETUP
 void setupValveRelayPins() {
-  ValveProperties prop;
-  EEPROM.get(0, prop);
   for (uint8_t i = 0; i < prop.valveCount; i++) {
     // There are   14 digital pins, where 0 and 1 are reserved and 2 is used for oneWire
     // The analog pins are available except A4 and A5 for I2C communications
     pinMode(findRelayPin(i), OUTPUT);
-    digitalWrite(findRelayPin(i), !prop.defaultControlStatus[i]);
   }
 }
 // ######################################## /SETUP
@@ -165,26 +169,23 @@ void setupValveRelayPins() {
 
 #ifdef test_relays
 void valveTest() {
-  ValveProperties prop;
-  EEPROM.get(0, prop);
-
   Serial.print(F("Testing valve on"));
   for (byte i = 0; i < prop.valveCount; i++) {
     digitalWrite(findRelayPin(i), false);
   }
-  delay(10000);
+  delay(4000);
   Serial.print(F("Testing valve off"));
   for (byte i = 0; i < prop.valveCount; i++) {
     digitalWrite(findRelayPin(i), true);
   }
-  delay(10000);
+  delay(4000);
   
   for (byte i = 0; i < prop.valveCount; i++) {
     Serial.print(F("Testing valve "));
     Serial.println(i);
-    digitalWrite(findRelayPin(i), true);
-    delay(2500);
     digitalWrite(findRelayPin(i), false);
+    delay(1500);
+    digitalWrite(findRelayPin(i), true);
   }
 }
 #endif

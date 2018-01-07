@@ -2,31 +2,14 @@
 #include <Ethernet.h>
 
 /**
-* Slave controller for low temperature (LT) floor and wall heating system.
-* The slave's purpose is to measure and control the heating loop temperature.
-* A room has one or more of these loops in the floor and walls, each of them is set
-* to a setpoint given by the master. Typically the master wants the floor to have a 
-* temperature of 25 C that in the end will result in a room temparature of say 22 C.
-*
-* Slave controllers are connected through I2C to their master controller. The communications
-* between master and slave are setpoints given by the master and loop and relay status by the slave.
-*
-* The loop flow is controlled by valves in the heating system, these are thermo actuated valves
-* ie. a medium heats up and melts/expands and thereby pressing the valve to open it.
-* These valves take a some time to open.
-* Temperature is measured by sensors connected with the onwire bus. Each return loop pipe has a sensor. Ie, a
-* feedback loop control system is applied with an on/off control.
-*
-* The advantage / purpose of the slave controller is to control each loop seperately. Each tube is different
-* in length and will show a different behaviour. By using a slave controller, a large concrete floor will
-* get the same behaviour as a small wall. Also less loops will be open on average and therefor open loops will
-* respond faster to heat demand given the limited pump and furnace capacity.
-*
-* On startup or after a reset the test cycle is performed where every valve is opened.
+* Control bridge for floor / wall heating system. The master controller (located in the iot-monitor java project) decides which
+* output or heating loops must be active. Communication is via HTTP.
+* If the connection with the controller is lost, the bridge switches to default settings.
 */
 
 #define Ntest_relays // remove the NO to test the relays
-#define koetshuis_kelder
+#define Nkoetshuis_kelder  //koetshuis_kelder has one relay that is controlled with an inverted signal
+#define koetshuis_trap_6  //negate all relays
 
 const byte RELAY_START_PIN = 2;
 const byte MAX_VALVES = 16;
@@ -44,12 +27,14 @@ struct ValveProperties {
 boolean received = false;
 IPAddress masterIP(192, 168, 178, 18);
 //ValveProperties prop = {"koetshuis_trap_15", 15, 22, {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED}, masterIP, 9999, {false, false, true, true, true, true, false, true, false, false, false, true, false, false, false}};
-ValveProperties prop = {"koetshuis_kelder", 9, 0, {0xDE, 0xAD, 0xBE, 0xEF, 0xFA, 0xEB}, masterIP, 9999, {1, 1, 1, 0, 0, 0, 1, 0, 0}};
-//ValveProperties prop = {"koetshuis_trap_6", 6, {0xDE, 0xAD, 0xBE, 0xEF, 0xFA, 0xEB}, masterIP, 9999, {true, true, true, true, true, false}};
+//ValveProperties prop = {"koetshuis_kelder", 9, 0, {0xDE, 0xAD, 0xBE, 0xEF, 0xFA, 0xEB}, masterIP, 9999, {1, 1, 1, 0, 0, 0, 1, 0, 0}};
+ValveProperties prop = {"koetshuis_trap_6", 6, 0, {0xDE, 0xAD, 0xBE, 0xEF, 0xFA, 0xEB}, masterIP, 9999, {1, 1, 1, 1, 1, 0}};
 
 EthernetClient client;
 long lastPostTime;
+long lastSuccessTime;
 const long POSTING_INTERVAL = 30000;
+const long SUCCESS_THRESHOLD = 5*POSTING_INTERVAL;
 byte receiveBuffer[MAX_VALVES+5];
 boolean relay[MAX_VALVES];
 byte bufferPosition;
@@ -78,9 +63,23 @@ void defaults() {
 }
 
 void loop(void) {
-  if (millis() > lastPostTime + POSTING_INTERVAL || millis() < lastPostTime) {
+  if (millis() > lastPostTime + POSTING_INTERVAL) {
     request();
   }
+  if (millis() > lastSuccessTime + SUCCESS_THRESHOLD) {
+    lastSuccessTime = millis();
+    defaults();
+    client.stop();
+    Ethernet.maintain();
+    Serial.println(F("No connection"));
+  }
+  if (millis() < lastPostTime) {
+    lastPostTime = 0;
+  }
+  if (millis() < lastSuccessTime) {
+    lastSuccessTime = 0;
+  }
+
   receive();
 
   if (received) {
@@ -93,6 +92,7 @@ void loop(void) {
         }
       }
       setValves();
+      lastSuccessTime = millis();
     } else {
       Serial.println(F(" failed checksum"));
     }
@@ -147,10 +147,6 @@ void request() {
     Serial.println(F("ed"));
   } else {
     Serial.println(F(" failed"));
-    client.stop();
-    Ethernet.maintain();
-    defaults();
-    setValves();
   }
   lastPostTime = millis();
   delay(1000);
@@ -204,12 +200,16 @@ uint8_t findRelayPin(uint8_t valveNumber) {
 }
 
 byte relayValue(uint8_t valveNumber, byte value) {
+  boolean negate = false;
+#ifdef koetshuis_trap_6
+  negate = true;
+#endif
 #ifdef koetshuis_kelder
   if (valveNumber == 0) {
-    return !value;
+    negate = true;
   }
 #endif
-  return value;
+  return (!negate == value);
 }
 
 
@@ -251,12 +251,12 @@ void setupValveRelayPins() {
     for (byte i = 0; i < prop.valveCount; i++) {
       digitalWrite(findRelayPin(i), relayValue(i, false));
     }
-    delay(2000);
+    delay(1500);
     for (byte i = 0; i < prop.valveCount; i++) {
       Serial.print(F("Testing valve "));
       Serial.println(i + 1);
       digitalWrite(findRelayPin(i), relayValue(i, true));
-      delay(1500);
+      delay(1000);
       digitalWrite(findRelayPin(i), relayValue(i, false));
     }
     if (prop.pumpPin > 0) {
