@@ -1,3 +1,7 @@
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.Arrays;
+
 /**
  * Created by Jaap on 25-7-2016.
  */
@@ -6,16 +10,27 @@ public class Main {
         try {
             switch (args[0]) {
                 case "FluxLogger":
-                    new FluxLogger().log().close();
+                    if (hasLogger(args[0])) {
+                        new FluxLogger().log().close();
+                    }
                     break;
                 case "FurnaceSlave":
-                    new FurnaceSlave().run();
+                    if (hasService(args[0])) {
+                        new FurnaceSlave().run();
+                    }
                     break;
                 case "ValveGroupSlave":
-                    new ValveGroupSlave().run();
+                    if (hasService(args[0])) {
+                        new ValveGroupSlave().run();
+                    }
                     break;
                 case "FurnaceMonitor":
-                    new FurnaceMonitor().run();
+                    if (hasService(args[0])) {
+                        new FurnaceMonitor().run();
+                    }
+                    break;
+                case "SerialAvailable":
+                    new SerialAvailable();
                     break;
                 default:
                     LogstashLogger.INSTANCE.message("ERROR: unknown parameter for Main " + args[0]);
@@ -25,4 +40,16 @@ public class Main {
             LogstashLogger.INSTANCE.message("ERROR: " + args[0] + " has finished with unhandled exception " + e.toString());
         }
     }
+
+    public static boolean hasService(String service) {
+        final Properties properties = new Properties();
+            return StringUtils.isEmpty(properties.prop.getProperty("services"))
+                    || Arrays.asList(properties.prop.getProperty("services").split(",")).contains(service);
+    }
+    public static boolean hasLogger(String logger) {
+        final Properties properties = new Properties();
+        return StringUtils.isEmpty(properties.prop.getProperty("loggers"))
+                || Arrays.asList(properties.prop.getProperty("services").split(",")).contains(logger);
+    }
+
 }
