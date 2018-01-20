@@ -1,6 +1,6 @@
 #!/bin/bash
 # respberry pi setup script for iot-solar
-# first run sudo apt-get git && git clone https://github.com/jstelwag/iot-furnace
+# first run sudo apt-get -y install git && git clone https://github.com/jstelwag/iot-furnace
 # then sh iot-furnace/src/main/bash/setup
 
 sudo apt-get update
@@ -9,9 +9,17 @@ sudo apt-get -y upgrade
 sudo apt-get -y install cron-apt rpi-update
 #sudo rpi-update
 sudo apt-get -y install redis-server
-sudo apt-get -y install openjdk-7-jdk maven
+sudo apt-get -y install openjdk-8-jdk maven
 #sudo apt-get -y install collectd
-sudo apt-get -y install librxtx-java
+#sudo apt-get -y install librxtx-java
+
+# allow debugging via pu to I2CMaster
+sudo apt-get install I2CMaster-tools
+sudo adduser pi I2CMaster
+echo 'I2CMaster-dev' | sudo tee --append /etc/modules
+echo 'dtparam=i2c_arm=on' | sudo tee --append /boot/config.txt
+
+# you must reboot in order to use I2CMaster
 
 cat <<EOF >iot.conf
 iot.id=kasteel_zolder
@@ -23,6 +31,8 @@ logstash.ip=192.168.
 logstash.port=9000
 monitor.ip=192.168.
 monitor.port=8000
+services=FurnaceSlave,ValveGroupSlave,FurnaceMonitor
+loggers=FluxLogger
 EOF
 sudo mv iot.conf /etc
 
@@ -47,6 +57,9 @@ sudo chmod +x /usr/local/bin/iot-furnace
 
 cd ~
 iot-upgrade
+
+# test if this works
+#sudo usermod -a -G tty pi
 
 sudo nano /etc/iot.conf
 
