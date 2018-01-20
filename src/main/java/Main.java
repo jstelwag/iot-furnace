@@ -30,7 +30,9 @@ public class Main {
                     }
                     break;
                 case "I2CMaster":
-                    new I2CMaster().run();
+                    if (hasService(args[0])) {
+                        new I2CMaster().run();
+                    }
                     break;
                 default:
                     LogstashLogger.INSTANCE.message("ERROR: unknown parameter for Main " + args[0]);

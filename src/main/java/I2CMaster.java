@@ -4,9 +4,9 @@ import com.pi4j.io.i2c.I2CFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.entity.ContentType;
+import redis.clients.jedis.Jedis;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -20,46 +20,61 @@ public class I2CMaster {
     private final String monitorIp;
     private final int monitorPort;
 
-    public I2CMaster() {
+    private final I2CBus bus;
+
+    private Jedis jedis;
+
+    public I2CMaster() throws IOException, I2CFactory.UnsupportedBusNumberException {
+        jedis = new Jedis("localhost");
+        if (jedis.exists("i2cmaster")) {
+            jedis.close();
+            System.exit(0);
+        }
         Properties prop = new Properties();
         iotId = prop.prop.getProperty("iot.id");
         monitorIp = prop.prop.getProperty("monitor.ip");
         monitorPort = Integer.parseInt(prop.prop.getProperty("monitor.port"));
+        bus = I2CFactory.getInstance(I2CBus.BUS_1);
     }
 
-    public void run() throws IOException, I2CFactory.UnsupportedBusNumberException, InterruptedException {
-        I2CBus i2c = I2CFactory.getInstance(I2CBus.BUS_1);
-
-        for (int i = 0; i < 255; i++) {
-            try {
-                I2CDevice device = i2c.getDevice(i);
-                device.write((byte)0x00);
-                String response = response(device);
-                if (response.contains(":")) {
-                    devices.put(response.split(":")[0], device);
-                }
-            } catch (IOException e) {
-                //Device does not exist, ignore
-            }
-        }
-
+    public void run()  {
+        scanDevices();
         while (true) {
+            if (devices.size() > 0) {
+                jedis = new Jedis("localhost");
+                jedis.setex("i2cmaster", 90, "i am the one");
+                jedis.close();
+            }
             for (String deviceId : devices.keySet()) {
-                String request = Request.Post("http://" + monitorIp +":" + monitorPort + "/valvegroup/")
-                        .bodyString(deviceId + ":", ContentType.DEFAULT_TEXT).execute().returnContent().asString();
-                devices.get(deviceId).write(request.getBytes());
-                String slaveResponse = response(devices.get(deviceId));
-
+                String slaveResponse;
+                try {
+                    String request = Request.Post("http://" + monitorIp +":" + monitorPort + "/valvegroup/")
+                            .bodyString(deviceId + ":", ContentType.DEFAULT_TEXT).execute().returnContent().asString();
+                    devices.get(deviceId).write(request.getBytes());
+                    slaveResponse = response(devices.get(deviceId));
+                } catch (IOException e) {
+                    LogstashLogger.INSTANCE.message("ERROR: Rescanning bus after communication error for " + deviceId);
+                    scanDevices();
+                    break;
+                }
                 if (StringUtils.countMatches(slaveResponse, ":") > 1) {
                     //Send response from valvegroup back to monitor for logging
-                    Request.Post("http://" + monitorIp +":" + monitorPort + "/valvegroup/")
-                            .bodyString(slaveResponse, ContentType.DEFAULT_TEXT).execute().returnContent().asString();
+                    try {
+                        Request.Post("http://" + monitorIp + ":" + monitorPort + "/valvegroup/")
+                                .bodyString(slaveResponse, ContentType.DEFAULT_TEXT).execute().returnContent().asString();
+                    } catch (IOException e) {
+                        LogstashLogger.INSTANCE.message("ERROR: failed to post valvegroup status for " + deviceId);
+                    }
                 } else {
                     System.out.println("ERROR: received garbage from the ValveGroup micro controller: " + slaveResponse);
                     LogstashLogger.INSTANCE.message("ERROR: received garbage from the ValveGroup micro controller: " + slaveResponse);
                 }
             }
-            Thread.sleep(30000);
+            try {
+                Thread.sleep(30000);
+            } catch (InterruptedException e) {
+                //ignore
+            }
         }
     }
 
@@ -74,6 +89,22 @@ public class I2CMaster {
         }
 
         return retval;
+    }
+
+    public void scanDevices() {
+        devices.clear();
+        for (int i = 0; i < 255; i++) {
+            try {
+                I2CDevice device = bus.getDevice(i);
+                device.write((byte)0x00);
+                String response = response(device);
+                if (response.contains(":")) {
+                    devices.put(response.split(":")[0], device);
+                }
+            } catch (IOException e) {
+                //Device does not exist, ignore
+            }
+        }
     }
 }
 
