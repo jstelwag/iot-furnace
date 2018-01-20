@@ -24,7 +24,7 @@ public class I2CMaster {
 
     private Jedis jedis;
 
-    public I2CMaster() {
+    public I2CMaster() throws IOException, I2CFactory.UnsupportedBusNumberException {
         jedis = new Jedis("localhost");
         if (jedis.exists("i2cmaster")) {
             jedis.close();
@@ -39,7 +39,7 @@ public class I2CMaster {
         } catch (I2CFactory.UnsupportedBusNumberException | IOException e) {
             System.out.println("FATAL: cannot connect i2c bus " + e.getMessage());
             LogstashLogger.INSTANCE.message("FATAL: cannot connect i2c bus " + e.getMessage());
-
+            throw e;
         }
     }
 
