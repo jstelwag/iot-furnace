@@ -20,6 +20,7 @@ public class ValveGroupSlave implements SerialPortEventListener {
     private final static int TTL = 60;
     private final String startTime;
     public final static String STARTTIME = "valvegroupslave.starttime";
+
     /**
      * A BufferedReader which will be fed by a InputStreamReader
      * converting the bytes into characters

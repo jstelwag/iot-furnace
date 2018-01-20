@@ -29,8 +29,8 @@ public class Main {
                         new FurnaceMonitor().run();
                     }
                     break;
-                case "SerialAvailable":
-                    new SerialAvailable();
+                case "i2c":
+                    new i2c().run();
                     break;
                 default:
                     LogstashLogger.INSTANCE.message("ERROR: unknown parameter for Main " + args[0]);
