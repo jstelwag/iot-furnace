@@ -24,7 +24,7 @@ public class I2CMaster {
 
     private Jedis jedis;
 
-    public I2CMaster() throws IOException, I2CFactory.UnsupportedBusNumberException {
+    public I2CMaster() {
         jedis = new Jedis("localhost");
         if (jedis.exists("i2cmaster")) {
             jedis.close();
@@ -34,7 +34,13 @@ public class I2CMaster {
         iotId = prop.prop.getProperty("iot.id");
         monitorIp = prop.prop.getProperty("monitor.ip");
         monitorPort = Integer.parseInt(prop.prop.getProperty("monitor.port"));
-        bus = I2CFactory.getInstance(I2CBus.BUS_1);
+        try {
+            bus = I2CFactory.getInstance(I2CBus.BUS_1);
+        } catch (I2CFactory.UnsupportedBusNumberException | IOException e) {
+            System.out.println("FATAL: cannot connect i2c bus " + e.getMessage());
+            LogstashLogger.INSTANCE.message("FATAL: cannot connect i2c bus " + e.getMessage());
+
+        }
     }
 
     public void run()  {
@@ -53,6 +59,7 @@ public class I2CMaster {
                     devices.get(deviceId).write(request.getBytes());
                     slaveResponse = response(devices.get(deviceId));
                 } catch (IOException e) {
+                    System.out.println("ERROR: Rescanning bus after communication error for " + deviceId);
                     LogstashLogger.INSTANCE.message("ERROR: Rescanning bus after communication error for " + deviceId);
                     scanDevices();
                     break;
@@ -63,6 +70,7 @@ public class I2CMaster {
                         Request.Post("http://" + monitorIp + ":" + monitorPort + "/valvegroup/")
                                 .bodyString(slaveResponse, ContentType.DEFAULT_TEXT).execute().returnContent().asString();
                     } catch (IOException e) {
+                        System.out.println("ERROR: failed to post valvegroup status for " + deviceId);
                         LogstashLogger.INSTANCE.message("ERROR: failed to post valvegroup status for " + deviceId);
                     }
                 } else {
@@ -105,6 +113,8 @@ public class I2CMaster {
                 //Device does not exist, ignore
             }
         }
+        System.out.println("Scanned " + devices.size() + " devices");
+        LogstashLogger.INSTANCE.message("Scanned " + devices.size() + " devices");
     }
 }
 

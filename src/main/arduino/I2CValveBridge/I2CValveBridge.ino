@@ -75,7 +75,7 @@ void setup(void) {
 
   defaults();
   setValves();
-  Wire.write("log:started");
+  Serial.println(F("log:started"));
 }
 
 void loop(void) {
@@ -92,8 +92,8 @@ void loop(void) {
   if (received) {
     for (byte s = 0; s <= VALVE_COUNT; s++) {
       if (relay[s] != receiveBuffer[s]) {
-        Wire.write("log:Changing relay ");
-        //Wire.write(s+1);
+        Serial.print(F("log:Changing relay "));
+        Serial.println(s+1);
         relay[s] = receiveBuffer[s];
       }
     }
