@@ -51,19 +51,7 @@ public class FurnaceMaster {
             LogstashLogger.INSTANCE.message("ERROR: Rescanning bus after communication error for " + deviceId);
             return false;
         }
-        if (StringUtils.countMatches(slaveResponse, ":") > 1) {
-            //Send response from valvegroup back to monitor for logging
-            try {
-                Request.Post("http://" + monitorIp + ":" + monitorPort + "/valvegroup/")
-                        .bodyString(slaveResponse, ContentType.DEFAULT_TEXT).execute().returnContent().asString();
-            } catch (IOException e) {
-                System.out.println("ERROR: failed to post valvegroup status for " + deviceId);
-                LogstashLogger.INSTANCE.message("ERROR: failed to post valvegroup status for " + deviceId);
-            }
-        } else {
-            System.out.println("ERROR: received garbage from the ValveGroup micro controller: " + slaveResponse);
-            LogstashLogger.INSTANCE.message("ERROR: received garbage from the ValveGroup micro controller: " + slaveResponse);
-        }
+        //todo send furnace state back to monito
         return true;
     }
 
