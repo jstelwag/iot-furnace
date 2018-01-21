@@ -1,9 +1,7 @@
 package i2c;
 
 import com.pi4j.io.i2c.I2CDevice;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.fluent.Request;
-import org.apache.http.entity.ContentType;
 import redis.clients.jedis.Jedis;
 import util.LogstashLogger;
 

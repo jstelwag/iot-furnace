@@ -80,8 +80,8 @@ public class Master {
 
     public static String response(I2CDevice device) throws IOException {
         String retval = "";
-        byte res[] = new byte[22];
-        device.read(res, 0, 22);
+        byte res[] = new byte[40];
+        device.read(res, 0, 40);
         for (byte b : res) {
             if (b > 0) {
                 retval += (char)(b & 0xFF);

@@ -228,6 +228,7 @@ void readSensors() {
 
 void sendData() {
   Wire.write(DEVICE_ID);
+  Wire.write(':');
   Wire.write(furnaceBoilerState ? '1' : '0');
   Wire.write(':');
   char result[5] = "";
