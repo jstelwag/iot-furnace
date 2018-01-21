@@ -31,12 +31,18 @@ public class FurnaceMaster {
 
     public boolean parse(String deviceId) {
         String slaveResponse;
-        try {
-            String request = Request.Post("http://" + monitorIp + ":" + monitorPort + "/furnace/")
-                    .bodyString(deviceId + "/", ContentType.DEFAULT_TEXT).execute().returnContent().asString();
-            String slaveRequest = furnaceState(request) ? "T" : "F";
-            slaveRequest += pumpState(request) ? "T" : "F";
 
+        String request = "";
+        String url = "http://" + monitorIp + ":" + monitorPort + "/furnace/" + deviceId + "/";
+        try {
+            request = Request.Get(url).execute().returnContent().asString();
+        } catch (IOException e) {
+            System.out.println("ERROR: did not retrieve monitor response @" + url);
+            LogstashLogger.INSTANCE.message("ERROR: did not retrieve monitor response @" + url);
+        }
+        String slaveRequest = furnaceState(request) ? "T" : "F";
+        slaveRequest += pumpState(request) ? "T" : "F";
+        try {
             devices.get(deviceId).write(slaveRequest.getBytes());
             slaveResponse = Master.response(devices.get(deviceId));
             System.out.println(request + "/" + slaveRequest + "/" + slaveResponse);

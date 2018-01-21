@@ -25,12 +25,14 @@
 * an Arduino, a temperature sensor and two relays (one for the furnace and one for the three-way valve).
 *
 * It is a slave. It needs to be leashed through Wire (i2c) to the master which is probably a Raspberry Pi running
-* iot-solar-boiler/i2c.Master
+* iot-solar-boiler/I2CMaster
 */
 
 #define nnkoetshuis_kelder
 #define nnkasteel_torenkelder
 #define kasteel_zolder
+
+#define mock_onewire
 
 #ifdef koetshuis_kelder
   const char DEVICE_ID[] = "F:koetshuis_kelder";
@@ -94,8 +96,13 @@ void setup() {
 }
 
 void loop() {
-  setupSensors();
-  readSensors();
+  #ifndef mock_onewire
+    setupSensors();
+    readSensors();
+  #else
+    Tboiler = 58.0;
+    Tauxillary =12.0;
+  #endif
   furnaceControl();
   if (millis() < lastConnectTime) {
     lastConnectTime = millis();
@@ -220,13 +227,17 @@ void readSensors() {
 }
 
 void sendData() {
-  Serial.print(furnaceBoilerState ? "1:" : "0:");
-  Serial.print(Tboiler);
+  Wire.write(DEVICE_ID);
+  Wire.write(furnaceBoilerState ? '1' : '0');
+  Wire.write(':');
+  char result[5] = "";
+  sprintf(result, "%.1f", Tboiler);
+  Wire.write(result);
   if (sensorCount > 1) {
-    Serial.print(':');
-    Serial.print(Tauxillary);
+    Wire.write(':');
+    sprintf(result, "%.1f", Tauxillary);
+    Wire.write(result);
   }
-  Serial.println();
 }
 
 void receiveData() {
