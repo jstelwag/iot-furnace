@@ -2,8 +2,11 @@ import gnu.io.CommPortIdentifier;
 import gnu.io.SerialPort;
 import gnu.io.SerialPortEvent;
 import gnu.io.SerialPortEventListener;
+import monitor.FurnaceMonitor;
 import org.apache.commons.lang3.StringUtils;
 import redis.clients.jedis.Jedis;
+import util.LogstashLogger;
+import util.Properties;
 
 import java.io.*;
 import java.util.Calendar;

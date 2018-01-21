@@ -1,4 +1,8 @@
+import i2c.Master;
+import monitor.FurnaceMonitor;
 import org.apache.commons.lang3.StringUtils;
+import util.LogstashLogger;
+import util.Properties;
 
 import java.util.Arrays;
 
@@ -24,14 +28,14 @@ public class Main {
                         new ValveGroupSlave().run();
                     }
                     break;
-                case "FurnaceMonitor":
+                case "monitor.FurnaceMonitor":
                     if (hasService(args[0])) {
                         new FurnaceMonitor().run();
                     }
                     break;
                 case "I2CMaster":
                     if (hasService(args[0])) {
-                        new I2CMaster().run();
+                        new Master().run();
                     }
                     break;
                 default:

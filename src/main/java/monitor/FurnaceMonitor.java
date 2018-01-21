@@ -1,5 +1,9 @@
+package monitor;
+
 import org.apache.http.client.fluent.Request;
 import redis.clients.jedis.Jedis;
+import util.LogstashLogger;
+import util.Properties;
 
 import java.io.IOException;
 

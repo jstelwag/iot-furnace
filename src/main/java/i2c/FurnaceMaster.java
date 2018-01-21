@@ -1,0 +1,93 @@
+package i2c;
+
+import com.pi4j.io.i2c.I2CDevice;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.http.client.fluent.Request;
+import org.apache.http.entity.ContentType;
+import redis.clients.jedis.Jedis;
+import util.LogstashLogger;
+
+import java.io.IOException;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Handles requests and responses from a connected Arduino valvegroup (I2CValveBridge)
+ */
+public class FurnaceMaster {
+
+    private final String monitorIp;
+    private final int monitorPort;
+
+    private Jedis jedis;
+
+    public FurnaceMaster(String monitorIp, int monitorPort) {
+        this.monitorIp = monitorIp;
+        this.monitorPort = monitorPort;
+    }
+
+    protected Map<String,I2CDevice> devices = new HashMap<>();
+
+    public boolean parse(String deviceId) {
+        String slaveResponse;
+        try {
+            String request = Request.Post("http://" + monitorIp + ":" + monitorPort + "/furnace/")
+                    .bodyString(deviceId + "/", ContentType.DEFAULT_TEXT).execute().returnContent().asString();
+            String slaveRequest = furnaceState(request) ? "T" : "F";
+            slaveRequest += pumpState(request) ? "T" : "F";
+
+            devices.get(deviceId).write(slaveRequest.getBytes());
+            slaveResponse = Master.response(devices.get(deviceId));
+            System.out.println(request + "/" + slaveRequest + "/" + slaveResponse);
+        } catch (IOException e) {
+            System.out.println("ERROR: Rescanning bus after communication error for " + deviceId);
+            LogstashLogger.INSTANCE.message("ERROR: Rescanning bus after communication error for " + deviceId);
+            return false;
+        }
+        if (StringUtils.countMatches(slaveResponse, ":") > 1) {
+            //Send response from valvegroup back to monitor for logging
+            try {
+                Request.Post("http://" + monitorIp + ":" + monitorPort + "/valvegroup/")
+                        .bodyString(slaveResponse, ContentType.DEFAULT_TEXT).execute().returnContent().asString();
+            } catch (IOException e) {
+                System.out.println("ERROR: failed to post valvegroup status for " + deviceId);
+                LogstashLogger.INSTANCE.message("ERROR: failed to post valvegroup status for " + deviceId);
+            }
+        } else {
+            System.out.println("ERROR: received garbage from the ValveGroup micro controller: " + slaveResponse);
+            LogstashLogger.INSTANCE.message("ERROR: received garbage from the ValveGroup micro controller: " + slaveResponse);
+        }
+        return true;
+    }
+
+    public boolean furnaceState(String furnaceResponse) {
+        if (furnaceResponse.contains("furnace\"=\"ON")) {
+            return true;
+        }
+        if (furnaceResponse.contains("furnace\"=\"OFF")) {
+            return false;
+        }
+        LogstashLogger.INSTANCE.message("Unexpected response iot-monitor @/furnace " + furnaceResponse);
+        Calendar now = Calendar.getInstance();
+        if (now.get(Calendar.HOUR) < 23 && now.get(Calendar.HOUR) > 5) {
+            return false;
+        }
+
+        jedis = new Jedis("localhost");
+        if (jedis.exists("auxiliary.temperature")) {
+            double temp = Double.parseDouble(jedis.get("auxiliary.temperature"));
+            LogstashLogger.INSTANCE.message("No iot-monitor furnace state available, using outside temperature " + temp);
+            jedis.close();
+            return temp < 16.0;
+        }
+        jedis.close();
+
+        LogstashLogger.INSTANCE.message("No iot-monitor furnace state available, using month based default");
+        return now.get(Calendar.MONTH) < 4 || now.get(Calendar.MONTH) > 9;
+    }
+
+    public boolean pumpState(String furnaceResponse) {
+        return furnaceResponse.contains("pump\"=\"ON");
+    }
+}

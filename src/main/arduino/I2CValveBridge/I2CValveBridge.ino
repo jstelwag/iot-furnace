@@ -124,19 +124,15 @@ void sendData() {
 
   Wire.write(DEVICE_ID);
   char comma[] = ":";
-  int checksum = 0;
   for (byte i = 0; i < VALVE_COUNT; i++) {
     Wire.write(comma);
-    boolean state = (byte)digitalRead(findRelayPin(i));
-    checksum += state;
+    boolean state = !digitalRead(findRelayPin(i));
     if (state) {
       Wire.write('1');
     } else {
       Wire.write('0');
     }
   }
-  Wire.write(comma);
-  Wire.write(checksum);
 }
 
 void defaults() {
