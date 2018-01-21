@@ -1,3 +1,5 @@
+package util;
+
 import org.apache.commons.lang3.math.NumberUtils;
 import util.LogstashLogger;
 import util.Properties;

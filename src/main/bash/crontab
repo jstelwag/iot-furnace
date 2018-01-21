@@ -4,7 +4,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 HOME=/home/pi
 
 */5 * * * * iot-furnace FurnaceSlave >> $HOME/furnace.log 2>&1
-*/5 * * * * iot-furnace i2c.Master >> $HOME/furnace.log 2>&1
+*/5 * * * * iot-furnace I2CMaster >> $HOME/furnace.log 2>&1
 */5 * * * * iot-furnace ValveGroupSlave >> $HOME/furnace.log 2>&1
 * * * * * iot-furnace FluxLogger >> $HOME/furnace.log 2>&1
 * * * * * (sleep 30 && iot-furnace FluxLogger >> $HOME/furnace.log 2>&1)

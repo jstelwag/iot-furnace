@@ -72,6 +72,7 @@ boolean pumpState = false;
 
 const long DISCONNECT_TIMOUT = 180000;
 long lastConnectTime;
+long pumpRunoutTime = 0; // Switch of gracetime
 
 const float BOILER_START_TEMP = 50.0;
 const float BOILER_STOP_TEMP = 56.5;
@@ -100,12 +101,19 @@ void loop() {
     setupSensors();
     readSensors();
   #else
+    sensorCount = 2;
     Tboiler = 58.0;
     Tauxillary =12.0;
   #endif
   furnaceControl();
   if (millis() < lastConnectTime) {
     lastConnectTime = millis();
+  }
+
+  if (pumpRunoutTime > 0) {
+    if (millis() < pumpRunoutTime || millis() > pumpRunoutTime + 150000) {
+      pumpRunoutTime = 0;
+    }
   }
   unconnectedHeatingControl();
 }
@@ -119,6 +127,7 @@ void furnaceControl() {
       if (furnaceHeatingState) {
         setFurnaceHeating(false);
         Serial.println(F("log: waiting 4 min for pump to stop"));
+        
         delay(240000); // wait 4 minutes
       }
       setBoilerValve(true);
@@ -232,11 +241,11 @@ void sendData() {
   Wire.write(furnaceBoilerState ? '1' : '0');
   Wire.write(':');
   char result[5] = "";
-  sprintf(result, "%.1f", Tboiler);
+  dtostrf(Tboiler,5, 1, result);
   Wire.write(result);
   if (sensorCount > 1) {
     Wire.write(':');
-    sprintf(result, "%.1f", Tauxillary);
+    dtostrf(Tauxillary,5, 1, result);
     Wire.write(result);
   }
 }

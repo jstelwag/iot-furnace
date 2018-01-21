@@ -10,16 +10,14 @@ sudo apt-get -y install cron-apt rpi-update
 #sudo rpi-update
 sudo apt-get -y install redis-server
 sudo apt-get -y install openjdk-8-jdk maven
-#sudo apt-get -y install collectd
-#sudo apt-get -y install librxtx-java
 
-# allow debugging via pu to i2c.Master
-sudo apt-get install i2c.Master-tools
-sudo adduser pi i2c.Master
-echo 'i2c.Master-dev' | sudo tee --append /etc/modules
+# allow debugging via pu to I2CMaster
+sudo apt-get install i2c-tools
+sudo adduser pi i2c
+echo 'i2c-dev' | sudo tee --append /etc/modules
 echo 'dtparam=i2c_arm=on' | sudo tee --append /boot/config.txt
 
-# you must reboot in order to use i2c.Master
+# you must reboot in order to use i2c
 
 cat <<EOF >iot.conf
 influx.ip=192.168.
@@ -28,7 +26,7 @@ logstash.ip=192.168.
 logstash.port=9000
 monitor.ip=192.168.
 monitor.port=8000
-services=FurnaceSlave,ValveGroupSlave,monitor.FurnaceMonitor,i2c.Master
+services=FurnaceSlave,ValveGroupSlave,FurnaceMonitor,I2CMaster
 loggers=FluxLogger
 EOF
 sudo mv iot.conf /etc

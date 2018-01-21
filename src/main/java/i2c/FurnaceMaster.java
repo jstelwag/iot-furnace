@@ -1,9 +1,12 @@
 package i2c;
 
 import com.pi4j.io.i2c.I2CDevice;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.fluent.Request;
 import redis.clients.jedis.Jedis;
 import util.LogstashLogger;
+import util.Properties;
+import util.TemperatureSensor;
 
 import java.io.IOException;
 import java.util.Calendar;
@@ -25,7 +28,7 @@ public class FurnaceMaster {
         this.monitorPort = monitorPort;
     }
 
-    protected Map<String,I2CDevice> devices = new HashMap<>();
+    protected Map<String, I2CDevice> devices = new HashMap<>();
 
     public boolean parse(String deviceId) {
         String slaveResponse;
@@ -43,6 +46,9 @@ public class FurnaceMaster {
         try {
             devices.get(deviceId).write(slaveRequest.getBytes());
             slaveResponse = Master.response(devices.get(deviceId));
+            if (StringUtils.countMatches(":", slaveResponse) > 3) {
+                state2Redis(slaveResponse);
+            }
             System.out.println(request + "/" + slaveRequest + "/" + slaveResponse);
         } catch (IOException e) {
             System.out.println("ERROR: Rescanning bus after communication error for " + deviceId);
@@ -81,5 +87,20 @@ public class FurnaceMaster {
 
     public boolean pumpState(String furnaceResponse) {
         return furnaceResponse.contains("pump\"=\"ON");
+    }
+
+    void state2Redis(String slaveResponse) {
+        jedis = new Jedis("localhost");
+        jedis.setex(TemperatureSensor.boiler + ".state", Properties.redisExpireSeconds, slaveResponse.split(":")[2]);
+        if (!TemperatureSensor.isOutlier(slaveResponse.split(":")[3])) {
+            jedis.setex(TemperatureSensor.boiler + ".temperature", Properties.redisExpireSeconds, slaveResponse.split(":")[3]);
+        }
+
+        if (StringUtils.countMatches(slaveResponse, ":") > 4) {
+            if (!TemperatureSensor.isOutlier(slaveResponse.split(":")[4])) {
+                jedis.setex("auxiliary.temperature", Properties.redisExpireSeconds, slaveResponse.split(":")[4]);
+            }
+        }
+        jedis.close();
     }
 }

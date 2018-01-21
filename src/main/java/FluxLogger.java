@@ -2,6 +2,7 @@ import org.apache.commons.lang3.StringUtils;
 import redis.clients.jedis.Jedis;
 import util.LogstashLogger;
 import util.Properties;
+import util.TemperatureSensor;
 
 import java.io.Closeable;
 import java.io.IOException;
