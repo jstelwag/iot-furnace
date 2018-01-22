@@ -5,6 +5,7 @@ import gnu.io.SerialPortEventListener;
 import monitor.FurnaceMonitor;
 import org.apache.commons.lang3.StringUtils;
 import redis.clients.jedis.Jedis;
+import util.FluxLogger;
 import util.LogstashLogger;
 import util.Properties;
 import util.TemperatureSensor;

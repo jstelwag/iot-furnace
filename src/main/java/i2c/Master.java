@@ -33,9 +33,12 @@ public class Master {
         Properties prop = new Properties();
         String ip = prop.prop.getProperty("monitor.ip");
         int port = Integer.parseInt(prop.prop.getProperty("monitor.port"));
+        String boilerName = prop.prop.getProperty("boiler.name");
+        String boilerSensor = prop.prop.getProperty("boiler.sensor");
+        String iotId = prop.prop.getProperty("iot.id");
 
         valve = new ValveMaster(ip, port);
-        furnace = new FurnaceMaster(ip, port);
+        furnace = new FurnaceMaster(ip, port, boilerName, boilerSensor, iotId);
 
         try {
             bus = I2CFactory.getInstance(I2CBus.BUS_1);

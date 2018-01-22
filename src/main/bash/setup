@@ -28,6 +28,9 @@ monitor.ip=192.168.
 monitor.port=8000
 services=FurnaceSlave,ValveGroupSlave,FurnaceMonitor,I2CMaster
 loggers=FluxLogger
+iot.id=kasteel_zolder
+boiler=boiler120
+#boiler=boiler200
 EOF
 sudo mv iot.conf /etc
 

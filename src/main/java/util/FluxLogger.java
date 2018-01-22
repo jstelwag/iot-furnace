@@ -1,8 +1,7 @@
+package util;
+
 import org.apache.commons.lang3.StringUtils;
 import redis.clients.jedis.Jedis;
-import util.LogstashLogger;
-import util.Properties;
-import util.TemperatureSensor;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -51,6 +50,7 @@ public class FluxLogger implements Closeable {
         return this;
     }
 
+    @Deprecated
     private void logTemperatures() {
         for (String sensorLocation : TemperatureSensor.sensors.keySet()) {
             String line = sensorLocation + '.' + "temperature ";
@@ -70,6 +70,7 @@ public class FluxLogger implements Closeable {
         }
     }
 
+    @Deprecated
     private void logState() {
         if (jedis.exists("boiler200.state")) {
             send("boiler200.state value=" + jedis.get("boiler200.state"));

@@ -1,6 +1,7 @@
 import i2c.Master;
 import monitor.FurnaceMonitor;
 import org.apache.commons.lang3.StringUtils;
+import util.FluxLogger;
 import util.LogstashLogger;
 import util.Properties;
 

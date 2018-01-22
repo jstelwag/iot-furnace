@@ -4,6 +4,7 @@ import com.pi4j.io.i2c.I2CDevice;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.fluent.Request;
 import redis.clients.jedis.Jedis;
+import util.FluxLogger;
 import util.LogstashLogger;
 import util.Properties;
 import util.TemperatureSensor;
@@ -20,12 +21,20 @@ public class FurnaceMaster {
 
     private final String monitorIp;
     private final int monitorPort;
+    private final String boilerName;
+    private final String boilerSensor;
+    private final String iotId;
+
+    public Double auxiliaryTemperature;
 
     private Jedis jedis;
 
-    public FurnaceMaster(String monitorIp, int monitorPort) {
+    public FurnaceMaster(String monitorIp, int monitorPort, String boiler, String boilerSensor, String iotId) {
         this.monitorIp = monitorIp;
         this.monitorPort = monitorPort;
+        this.boilerName = boiler;
+        this.boilerSensor = boilerSensor;
+        this.iotId = iotId;
     }
 
     protected Map<String, I2CDevice> devices = new HashMap<>();
@@ -48,6 +57,7 @@ public class FurnaceMaster {
             slaveResponse = Master.response(devices.get(deviceId));
             if (StringUtils.countMatches(":", slaveResponse) > 3) {
                 state2Redis(slaveResponse);
+                send2Flux(slaveResponse);
             }
             System.out.println(request + "/" + slaveRequest + "/" + slaveResponse);
         } catch (IOException e) {
@@ -55,7 +65,7 @@ public class FurnaceMaster {
             LogstashLogger.INSTANCE.message("ERROR: Rescanning bus after communication error for " + deviceId);
             return false;
         }
-        //todo send furnace state back to monito
+
         return true;
     }
 
@@ -72,12 +82,10 @@ public class FurnaceMaster {
             return false;
         }
 
-        jedis = new Jedis("localhost");
-        if (jedis.exists("auxiliary.temperature")) {
-            double temp = Double.parseDouble(jedis.get("auxiliary.temperature"));
-            LogstashLogger.INSTANCE.message("No iot-monitor furnace state available, using outside temperature " + temp);
-            jedis.close();
-            return temp < 16.0;
+        if (auxiliaryTemperature != null) {
+            LogstashLogger.INSTANCE.message("No iot-monitor furnace state available, using outside temperature "
+                    + auxiliaryTemperature);
+            return auxiliaryTemperature < 16.0;
         }
         jedis.close();
 
@@ -89,18 +97,24 @@ public class FurnaceMaster {
         return furnaceResponse.contains("pump\"=\"ON");
     }
 
+    void send2Flux(String slaveResponse) {
+        try (FluxLogger flux = new FluxLogger()) {
+            flux.send(boilerName + ".state value=" + slaveResponse.split(":")[2]);
+            if (!TemperatureSensor.isOutlier(slaveResponse.split(":")[3])) {
+                flux.send(boilerName + ".temperature " + boilerSensor + "=" + slaveResponse.split(":")[3].trim());
+            }
+            if (StringUtils.countMatches(slaveResponse, ":") > 4 && !TemperatureSensor.isOutlier(slaveResponse.split(":")[4])) {
+                auxiliaryTemperature = Double.parseDouble(slaveResponse.split(":")[4].trim());
+                flux.send("environment.temperature " + iotId + "=" + slaveResponse.split(":")[4].trim());
+            }
+        } catch (IOException e) {
+            LogstashLogger.INSTANCE.message("ERROR: failed to send to flux " + e.getMessage());
+        }
+    }
+
     void state2Redis(String slaveResponse) {
         jedis = new Jedis("localhost");
         jedis.setex(TemperatureSensor.boiler + ".state", Properties.redisExpireSeconds, slaveResponse.split(":")[2]);
-        if (!TemperatureSensor.isOutlier(slaveResponse.split(":")[3])) {
-            jedis.setex(TemperatureSensor.boiler + ".temperature", Properties.redisExpireSeconds, slaveResponse.split(":")[3]);
-        }
-
-        if (StringUtils.countMatches(slaveResponse, ":") > 4) {
-            if (!TemperatureSensor.isOutlier(slaveResponse.split(":")[4])) {
-                jedis.setex("auxiliary.temperature", Properties.redisExpireSeconds, slaveResponse.split(":")[4]);
-            }
-        }
         jedis.close();
     }
 }

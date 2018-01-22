@@ -29,7 +29,8 @@ public class TemperatureSensor {
                 break;
             default:
                 boiler = "error";
-                LogstashLogger.INSTANCE.message("ERROR, undefined iot.id (" + iotId + "( for Temperature Sensor");
+                System.out.println("FATAL, undefined iot.id (" + iotId + "( for Temperature Sensor");
+                LogstashLogger.INSTANCE.message("FATAL, undefined iot.id (" + iotId + "( for Temperature Sensor");
                 System.exit(0);
         }
     }
