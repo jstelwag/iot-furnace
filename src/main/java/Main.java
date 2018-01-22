@@ -29,7 +29,7 @@ public class Main {
                         new ValveGroupSlave().run();
                     }
                     break;
-                case "monitor.FurnaceMonitor":
+                case "FurnaceMonitor":
                     if (hasService(args[0])) {
                         new FurnaceMonitor().run();
                     }

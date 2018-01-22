@@ -103,10 +103,11 @@ public class FurnaceMaster {
     void send2Flux(String slaveResponse) {
         try (FluxLogger flux = new FluxLogger()) {
             flux.send(boilerName + ".state value=" + slaveResponse.split(":")[2]);
-            if (!TemperatureSensor.isOutlier(slaveResponse.split(":")[3])) {
+            if (!TemperatureSensor.isOutlier(slaveResponse.split(":")[3].trim())) {
                 flux.send(boilerName + ".temperature " + boilerSensor + "=" + slaveResponse.split(":")[3].trim());
             }
-            if (StringUtils.countMatches(slaveResponse, ":") > 4 && !TemperatureSensor.isOutlier(slaveResponse.split(":")[4])) {
+            if (StringUtils.countMatches(slaveResponse, ":") > 4
+                    && !TemperatureSensor.isOutlier(slaveResponse.split(":")[4].trim())) {
                 auxiliaryTemperature = Double.parseDouble(slaveResponse.split(":")[4].trim());
                 flux.send("environment.temperature " + iotId + "=" + slaveResponse.split(":")[4].trim());
             }

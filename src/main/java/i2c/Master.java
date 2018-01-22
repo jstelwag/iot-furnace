@@ -42,6 +42,7 @@ public class Master {
 
         try {
             bus = I2CFactory.getInstance(I2CBus.BUS_1);
+            System.out.println("Started i2c master for " + iotId);
         } catch (I2CFactory.UnsupportedBusNumberException | IOException e) {
             System.out.println("FATAL: cannot connect i2c bus " + e.getMessage());
             LogstashLogger.INSTANCE.message("FATAL: cannot connect i2c bus " + e.getMessage());

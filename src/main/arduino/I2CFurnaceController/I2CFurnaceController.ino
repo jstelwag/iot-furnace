@@ -32,7 +32,7 @@
 #define nnkasteel_torenkelder
 #define kasteel_zolder
 
-#define mock_onewire
+#define Nmock_onewire
 
 #ifdef koetshuis_kelder
   const char DEVICE_ID[] = "F:koetshuis_kelder";
@@ -102,8 +102,8 @@ void loop() {
     readSensors();
   #else
     sensorCount = 2;
-    Tboiler = 58.0;
-    Tauxillary =12.0;
+    Tboiler = 48.0;
+    Tauxillary = 12.0;
   #endif
   furnaceControl();
   if (millis() < lastConnectTime) {
@@ -142,10 +142,10 @@ void furnaceControl() {
       //Furnace us already off
     } else {
       setFurnaceBoiler(false);
-      Serial.println(F("log: waiting 2 min for pump to stop"));
+      Serial.println(F("log:waiting 2 min for pump to stop"));
       delay(120000);
       setBoilerValve(false);
-      Serial.println(F("log: switched furnace boiler off"));
+      Serial.println(F("log:switched furnace boiler off"));
     }
   }
 }
@@ -159,6 +159,7 @@ void unconnectedHeatingControl() {
       //There is an auxillary sensor, use it
       if (Tauxillary < 15.0) {
         setFurnaceHeating(true);
+        Serial.println(F("log:cold outside"));
       } else {
         setFurnaceHeating(false);
       }
@@ -166,7 +167,7 @@ void unconnectedHeatingControl() {
       //Assume heating must be on...
       setFurnaceHeating(true);
     }
-    Serial.println(F("log:not receiving from master"));
+    Serial.println(F("log:unconnected"));
     delay(30000);
   }
 }
