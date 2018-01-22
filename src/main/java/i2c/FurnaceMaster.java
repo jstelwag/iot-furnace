@@ -26,6 +26,7 @@ public class FurnaceMaster {
     private final String iotId;
 
     public Double auxiliaryTemperature;
+    public boolean boilerState = false;
 
     private Jedis jedis;
 
@@ -47,6 +48,8 @@ public class FurnaceMaster {
         try {
             request = Request.Get(url).execute().returnContent().asString();
         } catch (IOException e) {
+            //Ignore this error, without a directive from the monitor the furnace is controller
+            //with other variables like date and outside temperature
             System.out.println("ERROR: did not retrieve monitor response @" + url);
             LogstashLogger.INSTANCE.message("ERROR: did not retrieve monitor response @" + url);
         }
@@ -55,7 +58,7 @@ public class FurnaceMaster {
         try {
             devices.get(deviceId).write(slaveRequest.getBytes());
             slaveResponse = Master.response(devices.get(deviceId));
-            if (StringUtils.countMatches(":", slaveResponse) > 3) {
+            if (StringUtils.countMatches(slaveResponse, ":") > 3) {
                 state2Redis(slaveResponse);
                 send2Flux(slaveResponse);
             }
@@ -94,7 +97,7 @@ public class FurnaceMaster {
     }
 
     public boolean pumpState(String furnaceResponse) {
-        return furnaceResponse.contains("pump\"=\"ON");
+        return !boilerState && furnaceResponse.contains("pump\"=\"ON");
     }
 
     void send2Flux(String slaveResponse) {
@@ -108,12 +111,14 @@ public class FurnaceMaster {
                 flux.send("environment.temperature " + iotId + "=" + slaveResponse.split(":")[4].trim());
             }
         } catch (IOException e) {
+            System.out.println("ERROR: failed to send to flux " + e.getMessage());
             LogstashLogger.INSTANCE.message("ERROR: failed to send to flux " + e.getMessage());
         }
     }
 
     void state2Redis(String slaveResponse) {
         jedis = new Jedis("localhost");
+        boilerState = "1".equals(slaveResponse.split(":")[2].trim());
         jedis.setex(TemperatureSensor.boiler + ".state", Properties.redisExpireSeconds, slaveResponse.split(":")[2]);
         jedis.close();
     }
