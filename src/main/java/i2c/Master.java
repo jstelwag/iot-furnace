@@ -76,6 +76,9 @@ public class Master {
             }
             try {
                 Thread.sleep(30000);
+                if (deviceCount() != (valve.devices.size() + furnace.devices.size())) {
+                    scanDevices();
+                }
             } catch (InterruptedException e) {
                 //ignore
             }
@@ -84,14 +87,31 @@ public class Master {
 
     public static String response(I2CDevice device) throws IOException {
         String retval = "";
-        byte res[] = new byte[40];
-        device.read(res, 0, 40);
+        byte res[] = new byte[100];
+        device.read(res, 0, 100);
         for (byte b : res) {
             if (b > 0) {
                 retval += (char)(b & 0xFF);
             }
         }
 
+        return retval;
+    }
+
+    public int deviceCount() {
+        int  retval = 0;
+        for (int i = 0; i < 255; i++) {
+            try {
+                I2CDevice device = bus.getDevice(i);
+                device.write((byte)0x00);
+                String response = response(device);
+                if (response.contains(":")) {
+                    retval++;
+                }
+            } catch (IOException e) {
+                //Device does not exist, ignore
+            }
+        }
         return retval;
     }
 

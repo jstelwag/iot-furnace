@@ -21,13 +21,13 @@
 * a bridge (raspberry pi) who connects with the master controller (iot-monitor) via http.
 */
 #include <Wire.h>
-
+ 
 #define ntest_relays // remove the NO to test the relays
 
 #define nnkoetshuis_kelder  //koetshuis_kelder has one relay that is controlled with an inverted signal
 #define nkoetshuis_trap_6  //negate all relays
-#define nnkoetshuis_trap_15  //negate all relays and different pin settings
-#define kasteel_zolder
+#define koetshuis_trap_15  //negate all relays and different pin settings
+#define nkasteel_zolder
 
 #ifdef koetshuis_trap_6
   const byte VALVE_COUNT = 6;
@@ -62,16 +62,21 @@ boolean received  = false;
 
 void setup(void) {
   Serial.begin(9600);
-  
+#ifdef koetshuis_trap_15
+  Wire1.begin(SLAVE_ADDRESS);
+  Wire1.onReceive(receiveData);
+  Wire1.onRequest(sendData);
+#else
+  Wire.begin(SLAVE_ADDRESS);
+  Wire.onReceive(receiveData);
+  Wire.onRequest(sendData);
+#endif
+
   setupValveRelayPins();
 
 #ifdef test_relays
   valveTest();
 #endif
-
-  Wire.begin(SLAVE_ADDRESS);
-  Wire.onReceive(receiveData);
-  Wire.onRequest(sendData);
 
   defaults();
   setValves();
@@ -105,8 +110,13 @@ void loop(void) {
 }
 
 void receiveData(int byteCount) {
+#ifdef koetshuis_trap_15
+  while (Wire1.available()) {
+    char c = Wire1.read();
+#else
   while (Wire.available()) {
     char c = Wire.read();
+#endif
     if (c == 'E') {
       received = true;
     } else {
@@ -122,6 +132,19 @@ void sendData() {
     receiveBuffer[b] = false;
   }
 
+#ifdef koetshuis_trap_15
+  Wire1.write(DEVICE_ID);
+  char comma[] = ":";
+  for (byte i = 0; i < VALVE_COUNT; i++) {
+    Wire1.write(comma);
+    boolean state = !digitalRead(findRelayPin(i));
+    if (state) {
+      Wire1.write('1');
+    } else {
+      Wire1.write('0');
+    }
+  }
+#else
   Wire.write(DEVICE_ID);
   char comma[] = ":";
   for (byte i = 0; i < VALVE_COUNT; i++) {
@@ -133,6 +156,7 @@ void sendData() {
       Wire.write('0');
     }
   }
+#endif
 }
 
 void defaults() {
@@ -187,18 +211,18 @@ void valveTest() {
   for (byte i = 0; i < VALVE_COUNT; i++) {
     digitalWrite(findRelayPin(i), false);
   }
-  delay(4000);
+  delay(1000);
   Serial.print(F("Testing valve off"));
   for (byte i = 0; i < VALVE_COUNT; i++) {
     digitalWrite(findRelayPin(i), true);
   }
-  delay(4000);
+  delay(1000);
   
   for (byte i = 0; i < VALVE_COUNT; i++) {
     Serial.print(F("Testing valve "));
     Serial.println(i);
     digitalWrite(findRelayPin(i), false);
-    delay(1500);
+    delay(1000);
     digitalWrite(findRelayPin(i), true);
   }
 }

@@ -23,7 +23,7 @@ public class ValveMaster {
         this.monitorPort = monitorPort;
     }
 
-    protected Map<String,I2CDevice> devices = new HashMap<>();
+    protected Map<String, I2CDevice> devices = new HashMap<>();
 
     public boolean parse(String deviceId) {
         String slaveResponse;

@@ -12,10 +12,12 @@ sudo apt-get -y install redis-server
 sudo apt-get -y install openjdk-8-jdk maven
 
 # allow debugging via pu to I2CMaster
-sudo apt-get install i2c-tools
+sudo apt-get -y install i2c-tools
 sudo adduser pi i2c
 echo 'i2c-dev' | sudo tee --append /etc/modules
 echo 'dtparam=i2c_arm=on' | sudo tee --append /boot/config.txt
+# check with
+# i2cdetect -y 1
 
 # you must reboot in order to use i2c
 

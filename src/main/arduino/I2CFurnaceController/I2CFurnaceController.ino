@@ -32,6 +32,7 @@
 #define nnkasteel_torenkelder
 #define kasteel_zolder
 
+#define ntest_relays
 #define Nmock_onewire
 
 #ifdef koetshuis_kelder
@@ -87,6 +88,11 @@ void setup() {
   digitalWrite(BOILER_VALVE_RELAY_PIN, !boilerValveState);
   digitalWrite(FURNACE_HEATING_RELAY_PIN, !furnaceHeatingState);
   digitalWrite(PUMP_RELAY_PIN, !pumpState);
+
+#ifdef test_relays
+  testRelays();
+#endif
+
   lastConnectTime = millis(); //assume connection has been successful
 
   Wire.begin(SLAVE_ADDRESS);
@@ -149,7 +155,6 @@ void furnaceControl() {
     }
   }
 }
-
 
 void unconnectedHeatingControl() {
   if (lastConnectTime + DISCONNECT_TIMOUT < millis()) {
@@ -288,6 +293,43 @@ float filterSensorTemp(float rawSensorTemp, float currentTemp) {
     return rawSensorTemp;
   }
 }
+
+#ifdef test_relays
+void testRelays() {
+  Serial.println(F("FURNACE_BOILER_RELAY_PIN on 5"));
+  digitalWrite(FURNACE_BOILER_RELAY_PIN, false);
+  delay(500);
+  Serial.println(F("FURNACE_BOILER_RELAY_PIN off 5"));
+  digitalWrite(FURNACE_BOILER_RELAY_PIN, true);
+  delay(1000);
+  
+  Serial.println(F("FURNACE_BOILER_RELAY_PIN on 6"));
+  digitalWrite(FURNACE_BOILER_RELAY_PIN, false);
+  delay(500);
+  Serial.println(F("FURNACE_BOILER_RELAY_PIN off 6"));
+  digitalWrite(FURNACE_BOILER_RELAY_PIN, true);
+  delay(1000);
+  
+  Serial.println(F("FURNACE_HEATING_RELAY_PIN on 7"));
+  digitalWrite(FURNACE_HEATING_RELAY_PIN, false);
+  delay(500);
+  Serial.println(F("FURNACE_HEATING_RELAY_PIN off 7"));
+  digitalWrite(FURNACE_HEATING_RELAY_PIN, true);
+  delay(1000);
+  
+  Serial.println(F("PUMP_RELAY_PIN on 8"));
+  digitalWrite(PUMP_RELAY_PIN, false);
+  delay(500);
+  Serial.println(F("PUMP_RELAY_PIN off 8"));
+  digitalWrite(PUMP_RELAY_PIN, true);
+  delay(1000);
+  
+  digitalWrite(FURNACE_BOILER_RELAY_PIN, !furnaceBoilerState);
+  digitalWrite(BOILER_VALVE_RELAY_PIN, !boilerValveState);
+  digitalWrite(FURNACE_HEATING_RELAY_PIN, !furnaceHeatingState);
+  digitalWrite(PUMP_RELAY_PIN, !pumpState);
+}
+#endif
 
 // ######################################## SETUP
 
