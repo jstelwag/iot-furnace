@@ -35,7 +35,7 @@ public class Master {
         int port = Integer.parseInt(prop.prop.getProperty("monitor.port"));
         String boilerName = prop.prop.getProperty("boiler.name");
         String boilerSensor = prop.prop.getProperty("boiler.sensor");
-        String iotId = prop.prop.getProperty("iot.id");
+        String iotId = prop.prop.getProperty("iot.id") == null ? "valvegroup" : prop.prop.getProperty("iot.id");
 
         valve = new ValveMaster(ip, port);
         furnace = new FurnaceMaster(ip, port, boilerName, boilerSensor, iotId);
@@ -54,6 +54,7 @@ public class Master {
         scanDevices();
         while (true) {
             if (valve.devices.size() + furnace.devices.size() > 0) {
+                //Touch a value to show other processes we are alive
                 jedis = new Jedis("localhost");
                 jedis.setex("i2cmaster", 90, "i am the one");
                 jedis.close();

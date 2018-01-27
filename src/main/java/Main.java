@@ -24,11 +24,6 @@ public class Main {
                         new FurnaceSlave().run();
                     }
                     break;
-                case "ValveGroupSlave":
-                    if (hasService(args[0])) {
-                        new ValveGroupSlave().run();
-                    }
-                    break;
                 case "FurnaceMonitor":
                     if (hasService(args[0])) {
                         new FurnaceMonitor().run();

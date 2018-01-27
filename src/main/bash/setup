@@ -28,7 +28,7 @@ logstash.ip=192.168.
 logstash.port=9000
 monitor.ip=192.168.
 monitor.port=8000
-services=FurnaceSlave,ValveGroupSlave,FurnaceMonitor,I2CMaster
+services=FurnaceSlave,FurnaceMonitor,I2CMaster
 loggers=FluxLogger
 iot.id=kasteel_zolder
 boiler.name=boiler120
@@ -51,7 +51,7 @@ sudo chmod +x /usr/local/bin/iot-upgrade
 
 cat <<EOF >iot-furnace
 #!/bin/bash
-sh /home/pi/iot-furnace/src/main/bash/iot-furnace $1
+sh /home/pi/iot-furnace/src/main/bash/iot-furnace \$@
 exit 0
 EOF
 sudo mv iot-furnace /usr/local/bin

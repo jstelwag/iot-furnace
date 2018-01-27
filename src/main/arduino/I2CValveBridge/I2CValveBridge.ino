@@ -24,9 +24,9 @@
  
 #define ntest_relays // remove the NO to test the relays
 
-#define nnkoetshuis_kelder  //koetshuis_kelder has one relay that is controlled with an inverted signal
+#define koetshuis_kelder  //koetshuis_kelder has one relay that is controlled with an inverted signal
 #define nkoetshuis_trap_6  //negate all relays
-#define koetshuis_trap_15  //negate all relays and different pin settings
+#define nkoetshuis_trap_15  //negate all relays and different pin settings
 #define nkasteel_zolder
 
 #ifdef koetshuis_trap_6
@@ -34,24 +34,26 @@
   const char DEVICE_ID[] = "koetshuis_trap_6";
   const byte SLAVE_ADDRESS = 0x04;
   byte defaultControlStatus[] = {1, 1, 1, 1, 1, 0};
+  const byte RELAY_START_PIN = 3;
 #elif defined(koetshuis_trap_15)
   const byte VALVE_COUNT = 15;
   const char DEVICE_ID[] = "koetshuis_trap_15";
   const byte SLAVE_ADDRESS = 0x05;
   byte defaultControlStatus[] = {0, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0};
+  const byte RELAY_START_PIN = 3;
 #elif defined(koetshuis_kelder)
   const byte VALVE_COUNT = 9;
   const char DEVICE_ID[] = "koetshuis_kelder";
   const byte SLAVE_ADDRESS = 0x06;
   byte defaultControlStatus[] = {1, 1, 1, 0, 0, 0, 1, 0, 0};
+  const byte RELAY_START_PIN = 2;
 #elif defined(kasteel_zolder)
   const byte VALVE_COUNT = 8;
   const char DEVICE_ID[] = "kasteel_zolder";
   const byte SLAVE_ADDRESS = 0x07;
   byte defaultControlStatus[] = {1, 1, 1, 1, 0, 0, 0, 1};
+  const byte RELAY_START_PIN = 3;
 #endif
-
-const byte RELAY_START_PIN = 3;
 
 long lastSuccessTime;
 const long SUCCESS_THRESHOLD = 120000;
@@ -137,8 +139,7 @@ void sendData() {
   char comma[] = ":";
   for (byte i = 0; i < VALVE_COUNT; i++) {
     Wire1.write(comma);
-    boolean state = !digitalRead(findRelayPin(i));
-    if (state) {
+    if (relayValue(i, digitalRead(findRelayPin(i)))) {
       Wire1.write('1');
     } else {
       Wire1.write('0');
@@ -149,13 +150,14 @@ void sendData() {
   char comma[] = ":";
   for (byte i = 0; i < VALVE_COUNT; i++) {
     Wire.write(comma);
-    boolean state = !digitalRead(findRelayPin(i));
-    if (state) {
+    if (relayValue(i, digitalRead(findRelayPin(i)))) {
       Wire.write('1');
     } else {
       Wire.write('0');
     }
   }
+  Serial.print(F("pushed "));
+  Serial.println(VALVE_COUNT);
 #endif
 }
 
@@ -172,8 +174,8 @@ void defaults() {
 void setValves() {
   byte c = 0;
   for (byte i = 0; i < VALVE_COUNT; i++) {
-    if (digitalRead(findRelayPin(i)) == relay[i]) {
-      digitalWrite(findRelayPin(i), !relay[i]);
+    if (relayValue(i, digitalRead(findRelayPin(i))) != relay[i]) {
+      digitalWrite(findRelayPin(i), relayValue(i, relay[i]));
       c++;
     }
   }
@@ -194,6 +196,17 @@ uint8_t findRelayPin(uint8_t sensorNumber) {
   return sensorNumber + RELAY_START_PIN;
 }
 
+boolean relayValue(uint8_t valveNumber, byte value) {
+  boolean reverse = true;
+#ifdef koetshuis_kelder
+  reverse = false;
+  if (valveNumber == 0) {
+    reverse = true;
+  }
+#endif
+  return (reverse == value);
+}
+
 // ######################################## SETUP
 void setupValveRelayPins() {
   for (uint8_t i = 0; i < VALVE_COUNT; i++) {
@@ -207,23 +220,23 @@ void setupValveRelayPins() {
 
 #ifdef test_relays
 void valveTest() {
-  Serial.print(F("Testing valve on"));
+  Serial.println(F("Testing valve on"));
   for (byte i = 0; i < VALVE_COUNT; i++) {
-    digitalWrite(findRelayPin(i), false);
+    digitalWrite(findRelayPin(i), relayValue(i,false));
   }
-  delay(1000);
-  Serial.print(F("Testing valve off"));
+  delay(3000);
+  Serial.println(F("Testing valve off"));
   for (byte i = 0; i < VALVE_COUNT; i++) {
-    digitalWrite(findRelayPin(i), true);
+    digitalWrite(findRelayPin(i), relayValue(i, true));
   }
-  delay(1000);
+  delay(3000);
   
   for (byte i = 0; i < VALVE_COUNT; i++) {
     Serial.print(F("Testing valve "));
     Serial.println(i);
-    digitalWrite(findRelayPin(i), false);
+    digitalWrite(findRelayPin(i), relayValue(i, false));
     delay(1000);
-    digitalWrite(findRelayPin(i), true);
+    digitalWrite(findRelayPin(i), relayValue(i, true));
   }
 }
 #endif

@@ -5,7 +5,6 @@ HOME=/home/pi
 
 */5 * * * * iot-furnace FurnaceSlave >> $HOME/furnace.log 2>&1
 */5 * * * * iot-furnace I2CMaster >> $HOME/furnace.log 2>&1
-*/5 * * * * iot-furnace ValveGroupSlave >> $HOME/furnace.log 2>&1
 * * * * * iot-furnace FluxLogger >> $HOME/furnace.log 2>&1
 * * * * * (sleep 30 && iot-furnace FluxLogger >> $HOME/furnace.log 2>&1)
 */5 * * * * iot-furnace monitor.FurnaceMonitor >> $HOME/furnace.log 2>&1
