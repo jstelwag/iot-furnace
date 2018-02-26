@@ -88,8 +88,9 @@ public class Master {
 
     public static String response(I2CDevice device) throws IOException {
         String retval = "";
-        byte res[] = new byte[100];
-        device.read(res, 0, 100);
+
+        byte res[] = new byte[32];
+        device.read(res, 0, 32);
         for (byte b : res) {
             if (b > 0) {
                 retval += (char)(b & 0xFF);
@@ -104,9 +105,8 @@ public class Master {
         for (int i = 0; i < 255; i++) {
             try {
                 I2CDevice device = bus.getDevice(i);
-                device.write((byte)0x00);
-                String response = response(device);
-                if (response.contains(":")) {
+                device.write("H".getBytes());
+                if (StringUtils.isNotEmpty(response(device))) {
                     retval++;
                 }
             } catch (IOException e) {
@@ -122,12 +122,12 @@ public class Master {
         for (int i = 0; i < 255; i++) {
             try {
                 I2CDevice device = bus.getDevice(i);
-                device.write((byte)0x00);
+                device.write("H".getBytes());
                 String response = response(device);
                 if (response.startsWith("F:") && StringUtils.countMatches(response, ":") > 1) {
                     furnace.devices.put(response.split(":")[1], device);
-                } else if (response.contains(":")) {
-                    valve.devices.put(response.split(":")[0], device);
+                } else if (response.startsWith("V")) {
+                    valve.devices.put(response.substring(1), device);
                 } else {
                     System.out.println("Unrecognized device " + response);
                 }

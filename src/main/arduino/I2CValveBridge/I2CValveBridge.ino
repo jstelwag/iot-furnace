@@ -24,9 +24,9 @@
  
 #define ntest_relays // remove the NO to test the relays
 
-#define koetshuis_kelder  //koetshuis_kelder has one relay that is controlled with an inverted signal
+#define nkoetshuis_kelder  //koetshuis_kelder has one relay that is controlled with an inverted signal
 #define nkoetshuis_trap_6  //negate all relays
-#define nkoetshuis_trap_15  //negate all relays and different pin settings
+#define koetshuis_trap_15  //negate all relays and different pin settings
 #define nkasteel_zolder
 
 #ifdef koetshuis_trap_6
@@ -47,6 +47,7 @@
   const byte SLAVE_ADDRESS = 0x06;
   byte defaultControlStatus[] = {1, 1, 1, 0, 0, 0, 1, 0, 0};
   const byte RELAY_START_PIN = 2;
+  #define TWI_BUFFER_LENGTH 36
 #elif defined(kasteel_zolder)
   const byte VALVE_COUNT = 8;
   const char DEVICE_ID[] = "kasteel_zolder";
@@ -61,6 +62,7 @@ boolean receiveBuffer[VALVE_COUNT + 5];
 boolean relay[VALVE_COUNT];
 byte bufferPosition;
 boolean received  = false;
+boolean i2cscan = false;
 
 void setup(void) {
   Serial.begin(9600);
@@ -95,9 +97,8 @@ void loop(void) {
     lastSuccessTime = 0;
   }
 
-
-  if (received) {
-    for (byte s = 0; s <= VALVE_COUNT; s++) {
+  if (received && !i2cscan) {
+    for (byte s = 0; s < VALVE_COUNT; s++) {
       if (relay[s] != receiveBuffer[s]) {
         Serial.print(F("log:Changing relay "));
         Serial.println(s+1);
@@ -119,50 +120,60 @@ void receiveData(int byteCount) {
   while (Wire.available()) {
     char c = Wire.read();
 #endif
-    if (c == 'E') {
+    if (bufferPosition == 0 && c == 'H') {
+      i2cscan = true;
       received = true;
+      #ifdef koetshuis_trap_15
+      Wire1.flush();
+      #else
+      Wire.flush();
+      #endif
     } else {
-      receiveBuffer[bufferPosition] = (c == '1');
-      bufferPosition++;
+      if (c == 'E') {
+        received = true;
+      } else {
+        receiveBuffer[bufferPosition] = (c == '1');
+        bufferPosition++;
+      }
     }
   }
 }
 
 void sendData() {
-  bufferPosition = 0;
-  for (byte b = 0; b < sizeof(receiveBuffer); b++) {
-    receiveBuffer[b] = false;
-  }
-
-#ifdef koetshuis_trap_15
-  Wire1.write(DEVICE_ID);
-  char comma[] = ":";
-  for (byte i = 0; i < VALVE_COUNT; i++) {
-    Wire1.write(comma);
-    if (relayValue(i, digitalRead(findRelayPin(i)))) {
-      Wire1.write('1');
-    } else {
-      Wire1.write('0');
+  char wire[sizeof(DEVICE_ID) > (VALVE_COUNT + 2) ? sizeof(DEVICE_ID) : VALVE_COUNT + 2];
+  int wirePosition = 0;
+  if (i2cscan) {
+    i2cscan = false;
+    wire[wirePosition++] = 'V';
+    for (byte i = 1; i < sizeof(DEVICE_ID); i++) {
+      //skip terminating \0 character
+      wire[wirePosition++] = DEVICE_ID[i];
     }
-  }
-#else
-  Wire.write(DEVICE_ID);
-  char comma[] = ":";
-  for (byte i = 0; i < VALVE_COUNT; i++) {
-    Wire.write(comma);
-    if (relayValue(i, digitalRead(findRelayPin(i)))) {
-      Wire.write('1');
-    } else {
-      Wire.write('0');
+  } else {
+    bufferPosition = 0;
+    for (byte b = 0; b < sizeof(receiveBuffer); b++) {
+      receiveBuffer[b] = false;
     }
+  
+    wire[wirePosition++] = '[';
+    for (byte i = 0; i < VALVE_COUNT; i++) {
+      if (relayValue(i, digitalRead(findRelayPin(i)))) {
+        wire[wirePosition++] = '1';
+      } else {
+        wire[wirePosition++] = '0';
+      }
+    }
+    wire[wirePosition++] = ']';
   }
-  Serial.print(F("pushed "));
-  Serial.println(VALVE_COUNT);
-#endif
+  #ifdef koetshuis_trap_15
+  Wire1.write(wire, wirePosition);
+  #else
+  Wire.write(wire, wirePosition);
+  #endif
 }
 
 void defaults() {
-  for (byte s = 0; s <= VALVE_COUNT; s++) {
+  for (byte s = 0; s < VALVE_COUNT; s++) {
     if (relay[s] != defaultControlStatus[s]) {
       Serial.print(F("log:Changing relay "));
       Serial.println(s+1);
@@ -199,10 +210,12 @@ uint8_t findRelayPin(uint8_t sensorNumber) {
 boolean relayValue(uint8_t valveNumber, byte value) {
   boolean reverse = true;
 #ifdef koetshuis_kelder
-  reverse = false;
   if (valveNumber == 0) {
-    reverse = true;
+    reverse = false;
   }
+#endif
+#ifdef koetshuis_trap_15
+  reverse = false;
 #endif
   return (reverse == value);
 }
@@ -222,21 +235,21 @@ void setupValveRelayPins() {
 void valveTest() {
   Serial.println(F("Testing valve on"));
   for (byte i = 0; i < VALVE_COUNT; i++) {
-    digitalWrite(findRelayPin(i), relayValue(i,false));
+    digitalWrite(findRelayPin(i), relayValue(i, true));
   }
   delay(3000);
   Serial.println(F("Testing valve off"));
   for (byte i = 0; i < VALVE_COUNT; i++) {
-    digitalWrite(findRelayPin(i), relayValue(i, true));
+    digitalWrite(findRelayPin(i), relayValue(i, false));
   }
   delay(3000);
   
   for (byte i = 0; i < VALVE_COUNT; i++) {
     Serial.print(F("Testing valve "));
     Serial.println(i);
-    digitalWrite(findRelayPin(i), relayValue(i, false));
-    delay(1000);
     digitalWrite(findRelayPin(i), relayValue(i, true));
+    delay(1000);
+    digitalWrite(findRelayPin(i), relayValue(i, false));
   }
 }
 #endif

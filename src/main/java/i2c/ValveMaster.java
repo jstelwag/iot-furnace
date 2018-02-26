@@ -32,17 +32,17 @@ public class ValveMaster {
                     .bodyString(deviceId + ":", ContentType.DEFAULT_TEXT).execute().returnContent().asString();
             devices.get(deviceId).write(request.trim().getBytes());
             slaveResponse = Master.response(devices.get(deviceId));
-            System.out.println(request + "/" + slaveResponse);
+            System.out.println(deviceId + ": " + request + "/" + slaveResponse);
         } catch (IOException e) {
             System.out.println("ERROR: Rescanning bus after communication error for " + deviceId);
             LogstashLogger.INSTANCE.message("ERROR: Rescanning bus after communication error for " + deviceId);
             return false;
         }
-        if (StringUtils.countMatches(slaveResponse, ":") > 1) {
+        if (slaveResponse.endsWith("]")) {
             //Send response from valvegroup back to monitor for logging
             try {
                 Request.Post("http://" + monitorIp + ":" + monitorPort + "/valvegroup/")
-                        .bodyString(slaveResponse, ContentType.DEFAULT_TEXT).execute().returnContent().asString();
+                        .bodyString(deviceId + ":" + slaveResponse, ContentType.DEFAULT_TEXT).execute().returnContent().asString();
             } catch (IOException e) {
                 System.out.println("ERROR: failed to post valvegroup status for " + deviceId);
                 LogstashLogger.INSTANCE.message("ERROR: failed to post valvegroup status for " + deviceId);
