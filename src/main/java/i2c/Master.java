@@ -126,8 +126,8 @@ public class Master {
                 String response = response(device);
                 if (response.startsWith("F:") && StringUtils.countMatches(response, ":") > 1) {
                     furnace.devices.put(response.split(":")[1], device);
-                } else if (response.startsWith("V")) {
-                    valve.devices.put(response.substring(1), device);
+                } else if (response.startsWith("V") && response.contains("]")) {
+                        valve.devices.put(response.substring(1, response.indexOf("]")), device);
                 } else {
                     System.out.println("Unrecognized device " + response);
                 }

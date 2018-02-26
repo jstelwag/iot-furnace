@@ -1,7 +1,6 @@
 package i2c;
 
 import com.pi4j.io.i2c.I2CDevice;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.entity.ContentType;
 import util.LogstashLogger;
@@ -32,23 +31,23 @@ public class ValveMaster {
                     .bodyString(deviceId + ":", ContentType.DEFAULT_TEXT).execute().returnContent().asString();
             devices.get(deviceId).write(request.trim().getBytes());
             slaveResponse = Master.response(devices.get(deviceId));
-            System.out.println(deviceId + ": " + request + "/" + slaveResponse);
+            System.out.println(deviceId + ": " + request.trim() + "/" + slaveResponse);
         } catch (IOException e) {
             System.out.println("ERROR: Rescanning bus after communication error for " + deviceId);
             LogstashLogger.INSTANCE.message("ERROR: Rescanning bus after communication error for " + deviceId);
             return false;
         }
-        if (slaveResponse.endsWith("]")) {
+        if (slaveResponse.contains("]")) {
             //Send response from valvegroup back to monitor for logging
             try {
                 Request.Post("http://" + monitorIp + ":" + monitorPort + "/valvegroup/")
-                        .bodyString(deviceId + ":" + slaveResponse, ContentType.DEFAULT_TEXT).execute().returnContent().asString();
+                        .bodyString(deviceId + ":" + slaveResponse.substring(1, slaveResponse.indexOf("]")), ContentType.DEFAULT_TEXT).execute().returnContent().asString();
             } catch (IOException e) {
                 System.out.println("ERROR: failed to post valvegroup status for " + deviceId);
                 LogstashLogger.INSTANCE.message("ERROR: failed to post valvegroup status for " + deviceId);
             }
         } else {
-            System.out.println("ERROR: received garbage from the ValveGroup micro controller: " + slaveResponse);
+            System.out.println("ERROR: received garbage from the ValveGroup micro controller " + deviceId + ": " + slaveResponse);
             LogstashLogger.INSTANCE.message("ERROR: received garbage from the ValveGroup micro controller: " + slaveResponse);
         }
         return true;

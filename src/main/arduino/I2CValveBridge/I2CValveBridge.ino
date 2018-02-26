@@ -122,7 +122,8 @@ void receiveData(int byteCount) {
 #endif
     if (bufferPosition == 0 && c == 'H') {
       i2cscan = true;
-      received = true;
+      Serial.println(F("log: scanned"));
+      received = false;
       #ifdef koetshuis_trap_15
       Wire1.flush();
       #else
@@ -140,15 +141,16 @@ void receiveData(int byteCount) {
 }
 
 void sendData() {
-  char wire[sizeof(DEVICE_ID) > (VALVE_COUNT + 2) ? sizeof(DEVICE_ID) : VALVE_COUNT + 2];
+  char wire[(sizeof(DEVICE_ID) + 1) > (VALVE_COUNT + 2) ? sizeof(DEVICE_ID) + 1 : VALVE_COUNT + 2];
   int wirePosition = 0;
   if (i2cscan) {
     i2cscan = false;
     wire[wirePosition++] = 'V';
-    for (byte i = 1; i < sizeof(DEVICE_ID); i++) {
+    for (byte i = 0; i < sizeof(DEVICE_ID) - 1; i++) {
       //skip terminating \0 character
       wire[wirePosition++] = DEVICE_ID[i];
     }
+    wire[wirePosition++] = ']';
   } else {
     bufferPosition = 0;
     for (byte b = 0; b < sizeof(receiveBuffer); b++) {
@@ -157,7 +159,7 @@ void sendData() {
   
     wire[wirePosition++] = '[';
     for (byte i = 0; i < VALVE_COUNT; i++) {
-      if (relayValue(i, digitalRead(findRelayPin(i)))) {
+      if (relay[i]) {
         wire[wirePosition++] = '1';
       } else {
         wire[wirePosition++] = '0';
