@@ -41,7 +41,8 @@ public class ValveMaster {
             //Send response from valvegroup back to monitor for logging
             try {
                 Request.Post("http://" + monitorIp + ":" + monitorPort + "/valvegroup/")
-                        .bodyString(deviceId + ":" + slaveResponse.substring(1, slaveResponse.indexOf("]")), ContentType.DEFAULT_TEXT).execute().returnContent().asString();
+                        .bodyString(deviceId + ":" + slaveResponse.substring(0, slaveResponse.indexOf("]") + 1)
+                                , ContentType.DEFAULT_TEXT).execute().returnContent().asString();
             } catch (IOException e) {
                 System.out.println("ERROR: failed to post valvegroup status for " + deviceId);
                 LogstashLogger.INSTANCE.message("ERROR: failed to post valvegroup status for " + deviceId);

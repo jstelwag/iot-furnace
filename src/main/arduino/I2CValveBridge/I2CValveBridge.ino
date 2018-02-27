@@ -24,9 +24,9 @@
  
 #define ntest_relays // remove the NO to test the relays
 
-#define nkoetshuis_kelder  //koetshuis_kelder has one relay that is controlled with an inverted signal
+#define koetshuis_kelder  //koetshuis_kelder has one relay that is controlled with an inverted signal
 #define nkoetshuis_trap_6  //negate all relays
-#define koetshuis_trap_15  //negate all relays and different pin settings
+#define nkoetshuis_trap_15  //negate all relays and different pin settings
 #define nkasteel_zolder
 
 #ifdef koetshuis_trap_6
@@ -187,10 +187,10 @@ void defaults() {
 void setValves() {
   byte c = 0;
   for (byte i = 0; i < VALVE_COUNT; i++) {
-    if (relayValue(i, digitalRead(findRelayPin(i))) != relay[i]) {
+    //if (relayValue(i, digitalRead(findRelayPin(i))) != relay[i]) {
       digitalWrite(findRelayPin(i), relayValue(i, relay[i]));
-      c++;
-    }
+    //  c++;
+    //}
   }
   if (c > 0) {
     Serial.print(F("log: changed "));
@@ -219,6 +219,10 @@ boolean relayValue(uint8_t valveNumber, byte value) {
 #ifdef koetshuis_trap_15
   reverse = false;
 #endif
+#ifdef koetshuis_trap_6
+  reverse = false;
+#endif
+
   return (reverse == value);
 }
 
