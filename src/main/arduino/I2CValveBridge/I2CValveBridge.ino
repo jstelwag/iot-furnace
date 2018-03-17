@@ -24,32 +24,43 @@
  
 #define ntest_relays // remove the NO to test the relays
 
-#define koetshuis_kelder  //koetshuis_kelder has one relay that is controlled with an inverted signal
+#define nkoetshuis_kelder  //koetshuis_kelder has one relay that is controlled with an inverted signal
 #define nkoetshuis_trap_6  //negate all relays
 #define nkoetshuis_trap_15  //negate all relays and different pin settings
+#define kasteel_hal
 #define nkasteel_zolder
 
 #ifdef koetshuis_trap_6
   const byte VALVE_COUNT = 6;
+  const byte RELAY_COUNT = 6;
   const char DEVICE_ID[] = "koetshuis_trap_6";
   const byte SLAVE_ADDRESS = 0x04;
   byte defaultControlStatus[] = {1, 1, 1, 1, 1, 0};
   const byte RELAY_START_PIN = 3;
 #elif defined(koetshuis_trap_15)
   const byte VALVE_COUNT = 15;
+  const byte RELAY_COUNT = 16;
   const char DEVICE_ID[] = "koetshuis_trap_15";
   const byte SLAVE_ADDRESS = 0x05;
   byte defaultControlStatus[] = {0, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0};
   const byte RELAY_START_PIN = 3;
 #elif defined(koetshuis_kelder)
   const byte VALVE_COUNT = 9;
+  const byte RELAY_COUNT = 9;
   const char DEVICE_ID[] = "koetshuis_kelder";
   const byte SLAVE_ADDRESS = 0x06;
   byte defaultControlStatus[] = {1, 1, 1, 0, 0, 0, 1, 0, 0};
   const byte RELAY_START_PIN = 2;
-  #define TWI_BUFFER_LENGTH 36
+#elif defined(kasteel_hal)
+  const byte VALVE_COUNT = 14;
+  const byte RELAY_COUNT = 14;
+  const char DEVICE_ID[] = "kasteel_hal";
+  const byte SLAVE_ADDRESS = 0x12;
+  byte defaultControlStatus[] = {1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1};
+  const byte RELAY_START_PIN = 3;
 #elif defined(kasteel_zolder)
   const byte VALVE_COUNT = 8;
+  const byte RELAY_COUNT = 8;
   const char DEVICE_ID[] = "kasteel_zolder";
   const byte SLAVE_ADDRESS = 0x07;
   byte defaultControlStatus[] = {1, 1, 1, 1, 0, 0, 0, 1};
@@ -60,17 +71,17 @@ long lastSuccessTime;
 const long SUCCESS_THRESHOLD = 120000;
 boolean receiveBuffer[VALVE_COUNT + 5];
 boolean relay[VALVE_COUNT];
-byte bufferPosition;
 boolean received  = false;
 boolean i2cscan = false;
+boolean messageChecked = false;
 
 void setup(void) {
   Serial.begin(9600);
-#ifdef koetshuis_trap_15
+#if defined(koetshuis_trap_15)
   Wire1.begin(SLAVE_ADDRESS);
   Wire1.onReceive(receiveData);
   Wire1.onRequest(sendData);
-#else
+#else 
   Wire.begin(SLAVE_ADDRESS);
   Wire.onReceive(receiveData);
   Wire.onRequest(sendData);
@@ -84,26 +95,26 @@ void setup(void) {
 
   defaults();
   setValves();
-  Serial.println(F("log:started"));
 }
 
 void loop(void) {
   if (millis() > lastSuccessTime + SUCCESS_THRESHOLD) {
     lastSuccessTime = millis();
     defaults();
-    Serial.println(F("log: ERROR connection lost"));
   }
   if (millis() < lastSuccessTime) {
     lastSuccessTime = 0;
   }
 
   if (received && !i2cscan) {
-    for (byte s = 0; s < VALVE_COUNT; s++) {
+    for (byte s = 0; s < RELAY_COUNT; s++) {
       if (relay[s] != receiveBuffer[s]) {
-        Serial.print(F("log:Changing relay "));
-        Serial.println(s+1);
         relay[s] = receiveBuffer[s];
       }
+    }
+      
+    for (byte b = 0; b < sizeof(receiveBuffer); b++) {
+      receiveBuffer[b] = false;
     }
 
     setValves();
@@ -113,7 +124,9 @@ void loop(void) {
 }
 
 void receiveData(int byteCount) {
-#ifdef koetshuis_trap_15
+  messageChecked = false;
+  byte bufferPosition = 0;
+#if defined(koetshuis_trap_15)
   while (Wire1.available()) {
     char c = Wire1.read();
 #else
@@ -122,9 +135,8 @@ void receiveData(int byteCount) {
 #endif
     if (bufferPosition == 0 && c == 'H') {
       i2cscan = true;
-      Serial.println(F("log: scanned"));
       received = false;
-      #ifdef koetshuis_trap_15
+      #if defined(koetshuis_trap_15)
       Wire1.flush();
       #else
       Wire.flush();
@@ -132,6 +144,7 @@ void receiveData(int byteCount) {
     } else {
       if (c == 'E') {
         received = true;
+        messageChecked = (bufferPosition == RELAY_COUNT + 1);
       } else {
         receiveBuffer[bufferPosition] = (c == '1');
         bufferPosition++;
@@ -152,11 +165,6 @@ void sendData() {
     }
     wire[wirePosition++] = ']';
   } else {
-    bufferPosition = 0;
-    for (byte b = 0; b < sizeof(receiveBuffer); b++) {
-      receiveBuffer[b] = false;
-    }
-  
     wire[wirePosition++] = '[';
     for (byte i = 0; i < VALVE_COUNT; i++) {
       if (relay[i]) {
@@ -167,7 +175,7 @@ void sendData() {
     }
     wire[wirePosition++] = ']';
   }
-  #ifdef koetshuis_trap_15
+  #if defined(koetshuis_trap_15)
   Wire1.write(wire, wirePosition);
   #else
   Wire.write(wire, wirePosition);
@@ -177,25 +185,14 @@ void sendData() {
 void defaults() {
   for (byte s = 0; s < VALVE_COUNT; s++) {
     if (relay[s] != defaultControlStatus[s]) {
-      Serial.print(F("log:Changing relay "));
-      Serial.println(s+1);
       relay[s] = defaultControlStatus[s];
     }
   }
 }
 
 void setValves() {
-  byte c = 0;
   for (byte i = 0; i < VALVE_COUNT; i++) {
-    //if (relayValue(i, digitalRead(findRelayPin(i))) != relay[i]) {
-      digitalWrite(findRelayPin(i), relayValue(i, relay[i]));
-    //  c++;
-    //}
-  }
-  if (c > 0) {
-    Serial.print(F("log: changed "));
-    Serial.print(c);
-    Serial.println(F(" valves"));
+    digitalWrite(findRelayPin(i), relayValue(i, relay[i]));
   }
 }
 
@@ -216,10 +213,7 @@ boolean relayValue(uint8_t valveNumber, byte value) {
     reverse = false;
   }
 #endif
-#ifdef koetshuis_trap_15
-  reverse = false;
-#endif
-#ifdef koetshuis_trap_6
+#if defined(koetshuis_trap_15) || defined(koetshuis_trap_6) || defined(kasteel_hal)
   reverse = false;
 #endif
 
