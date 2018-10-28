@@ -62,7 +62,7 @@ public class FurnaceMaster {
                 state2Redis(slaveResponse);
                 send2Flux(slaveResponse);
             }
-            LogstashLogger.INSTANCE.message("Requested valve slave after monitor directive: " + monitorResponse
+            LogstashLogger.INSTANCE.message("Requested furnace slave after monitor directive: " + monitorResponse
                     + ", slave request: " + slaveRequest + " and slave response: " + slaveResponse);
         } catch (IOException e) {
             System.out.println("ERROR: Rescanning bus after communication error for " + deviceId);

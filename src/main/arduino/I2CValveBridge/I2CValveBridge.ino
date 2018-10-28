@@ -27,8 +27,8 @@
 #define nkoetshuis_kelder  //koetshuis_kelder has one relay that is controlled with an inverted signal
 #define nkoetshuis_trap_6  //negate all relays
 #define nkoetshuis_trap_15  //negate all relays and different pin settings
-#define kasteel_hal
-#define nkasteel_zolder
+#define nkasteel_hal
+#define kasteel_zolder
 
 #ifdef koetshuis_trap_6
   const byte VALVE_COUNT = 6;
@@ -194,7 +194,7 @@ void setValves() {
   for (byte i = 0; i < VALVE_COUNT; i++) {
     digitalWrite(findRelayPin(i), relayValue(i, relay[i]));
   }
-}
+} 
 
 /**
 * Maps relay pins with loop number.

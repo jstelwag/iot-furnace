@@ -27,11 +27,13 @@ public class ValveMaster {
     public boolean parse(String deviceId) {
         String slaveResponse;
         try {
-            String request = Request.Post("http://" + monitorIp + ":" + monitorPort + "/valvegroup/")
+            String monitorRequest = "http://" + monitorIp + ":" + monitorPort + "/valvegroup/";
+            String monitorResponse = Request.Post(monitorRequest)
                     .bodyString(deviceId + ":", ContentType.DEFAULT_TEXT).execute().returnContent().asString();
-            devices.get(deviceId).write(request.trim().getBytes());
+            devices.get(deviceId).write(monitorResponse.trim().getBytes());
             slaveResponse = Master.response(devices.get(deviceId));
-            System.out.println(deviceId + ": " + request.trim() + "/" + slaveResponse);
+            LogstashLogger.INSTANCE.message("Requested valve slave from monitor directive " + monitorResponse +
+                    " which after passing on to the slave resulted in the following response: " + slaveResponse);
         } catch (IOException e) {
             System.out.println("ERROR: Rescanning bus after communication error for " + deviceId);
             LogstashLogger.INSTANCE.message("ERROR: Rescanning bus after communication error for " + deviceId);
