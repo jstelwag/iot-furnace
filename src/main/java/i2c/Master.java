@@ -24,12 +24,6 @@ public class Master {
     private Jedis jedis;
 
     public Master() throws IOException, I2CFactory.UnsupportedBusNumberException {
-        jedis = new Jedis("localhost");
-        if (jedis.exists("i2cmaster")) {
-            jedis.close();
-            System.exit(0);
-        }
-
         Properties prop = new Properties();
         String ip = prop.prop.getProperty("monitor.ip");
         int port = Integer.parseInt(prop.prop.getProperty("monitor.port"));
