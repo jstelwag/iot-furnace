@@ -43,18 +43,18 @@ public class FurnaceMaster {
     public boolean parse(String deviceId) {
         String slaveResponse;
 
-        String request = "";
-        String url = "http://" + monitorIp + ":" + monitorPort + "/furnace/" + deviceId + "/";
+        String monitorResponse = "";
+        String monitorRequest = "http://" + monitorIp + ":" + monitorPort + "/furnace/" + deviceId + "/";
         try {
-            request = Request.Get(url).execute().returnContent().asString();
+            monitorResponse = Request.Get(monitorRequest).execute().returnContent().asString();
         } catch (IOException e) {
             //Ignore this error, without a directive from the monitor the furnace is controller
             //with other variables like date and outside temperature
-            System.out.println("ERROR: did not retrieve monitor response @" + url);
-            LogstashLogger.INSTANCE.message("ERROR: did not retrieve monitor response @" + url);
+            System.out.println("ERROR: did not retrieve monitor response @" + monitorRequest);
+            LogstashLogger.INSTANCE.message("ERROR: did not retrieve monitor response @" + monitorRequest);
         }
-        String slaveRequest = furnaceState(request) ? "T" : "F";
-        slaveRequest += pumpState(request) ? "T" : "F";
+        String slaveRequest = furnaceState(monitorResponse) ? "T" : "F";
+        slaveRequest += pumpState(monitorResponse) ? "T" : "F";
         try {
             devices.get(deviceId).write(slaveRequest.getBytes());
             slaveResponse = Master.response(devices.get(deviceId));
@@ -62,7 +62,8 @@ public class FurnaceMaster {
                 state2Redis(slaveResponse);
                 send2Flux(slaveResponse);
             }
-            System.out.println(request + "/" + slaveRequest + "/" + slaveResponse);
+            LogstashLogger.INSTANCE.message("Requested valve slave after monitor directive: " + monitorResponse
+                    + ", slave request: " + slaveRequest + " and slave response: " + slaveResponse);
         } catch (IOException e) {
             System.out.println("ERROR: Rescanning bus after communication error for " + deviceId);
             LogstashLogger.INSTANCE.message("ERROR: Rescanning bus after communication error for " + deviceId);

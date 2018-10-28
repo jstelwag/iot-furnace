@@ -30,8 +30,10 @@ public class FurnaceMonitor {
     public void run() {
         Jedis jedis = new Jedis("localhost");
         try {
-            String furnaceResponse = Request.Get("http://" + monitorIp +":" + monitorPort + "/furnace/" + iotId + "/")
+            String furnaceRequest = "http://" + monitorIp +":" + monitorPort + "/furnace/" + iotId + "/";
+            String furnaceResponse = Request.Get(furnaceRequest)
                     .execute().returnContent().asString();
+            LogstashLogger.INSTANCE.message("Directive from the monitor: " + furnaceResponse);
             if (furnaceResponse.contains("furnace\"=\"ON")) {
                 jedis.setex(FURNACE_KEY, TTL, "ON");
             } else if (furnaceResponse.contains("OFF")) {

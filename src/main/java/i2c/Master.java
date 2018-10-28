@@ -101,7 +101,7 @@ public class Master {
     }
 
     public int deviceCount() {
-        int  retval = 0;
+        int retval = 0;
         for (int i = 0; i < 255; i++) {
             try {
                 I2CDevice device = bus.getDevice(i);
@@ -109,7 +109,7 @@ public class Master {
                 if (StringUtils.isNotEmpty(response(device))) {
                     retval++;
                 }
-            } catch (IOException e) {
+            } catch (IOException ignored) {
                 //Device does not exist, ignore
             }
         }
@@ -131,11 +131,11 @@ public class Master {
                     valve.devices.put(response.substring(1, response.indexOf("]")), device);
                 } else {
                     System.out.println("Unrecognized device " + response);
+                    LogstashLogger.INSTANCE.message("Unrecognized device " + response);
                 }
             } catch (IOException ignored) {
             }
         }
-        System.out.println("Scanned " + (valve.devices.size() + furnace.devices.size()) + " devices");
         LogstashLogger.INSTANCE.message("Scanned " + (valve.devices.size() + furnace.devices.size()) + " devices");
     }
 }
