@@ -47,7 +47,7 @@ public class Master {
             if (valve.devices.size() + furnace.devices.size() == 0) {
                 System.out.println("There are no devices connected to this master, exiting");
                 LogstashLogger.INSTANCE.message("There are no devices connected to this master");
-                System.exit(0);
+                System.exit(1);
             }
             for (String deviceId : valve.devices.keySet()) {
                 if (!valve.parse(deviceId)) {
@@ -125,5 +125,3 @@ public class Master {
         LogstashLogger.INSTANCE.message("Scanned " + (valve.devices.size() + furnace.devices.size()) + " devices");
     }
 }
-
-
