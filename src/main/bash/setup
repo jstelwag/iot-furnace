@@ -91,5 +91,30 @@ sudo systemctl enable i2c.service
 sudo systemctl start i2c
 sudo systemctl status i2c
 
+cat <<EOF >http.service
+[Unit]
+Description=Java http service
+[Service]
+User=pi
+# The configuration file application.properties should be here:
+#change this to your workspace
+WorkingDirectory=/home/pi
+#path to executable.
+#executable is a bash script which calls jar file
+ExecStart=/usr/local/bin/iot-furnace http
+SuccessExitStatus=143
+TimeoutStopSec=10
+Restart=on-failure
+RestartSec=5
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo mv http.service /etc/systemd/system/
+
+sudo systemctl daemon-reload
+sudo systemctl enable http.service
+sudo systemctl start http
+sudo systemctl status http
 
 exit 0

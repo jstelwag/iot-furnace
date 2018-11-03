@@ -4,7 +4,6 @@ import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
 import org.apache.commons.lang3.StringUtils;
-import redis.clients.jedis.Jedis;
 import util.LogstashLogger;
 import util.Properties;
 
@@ -21,8 +20,6 @@ public class Master {
 
     private final I2CBus bus;
 
-    private Jedis jedis;
-
     public Master() throws IOException, I2CFactory.UnsupportedBusNumberException {
         Properties prop = new Properties();
         String ip = prop.prop.getProperty("monitor.ip");
@@ -36,7 +33,7 @@ public class Master {
 
         try {
             bus = I2CFactory.getInstance(I2CBus.BUS_1);
-            System.out.println("Started i2c master for " + iotId);
+            LogstashLogger.INSTANCE.message("Started i2c master");
         } catch (I2CFactory.UnsupportedBusNumberException | IOException e) {
             System.out.println("FATAL: cannot connect i2c bus " + e.getMessage());
             LogstashLogger.INSTANCE.message("FATAL: cannot connect i2c bus " + e.getMessage());
@@ -47,13 +44,8 @@ public class Master {
     public void run()  {
         scanDevices();
         while (true) {
-            if (valve.devices.size() + furnace.devices.size() > 0) {
-                //Touch a value to show other processes we are alive
-                jedis = new Jedis("localhost");
-                jedis.setex("i2cmaster", 90, "i am the one");
-                jedis.close();
-            } else {
-                System.out.println("There are no devices connected to this master");
+            if (valve.devices.size() + furnace.devices.size() == 0) {
+                System.out.println("There are no devices connected to this master, exiting");
                 LogstashLogger.INSTANCE.message("There are no devices connected to this master");
                 System.exit(0);
             }
