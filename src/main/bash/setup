@@ -76,7 +76,6 @@ WorkingDirectory=/home/jaap
 #path to executable.
 #executable is a bash script which calls jar file
 ExecStart=/usr/local/bin/iot-furnace I2CMaster
-SuccessExitStatus=143
 TimeoutStopSec=10
 Restart=on-failure
 RestartSec=5
@@ -102,7 +101,6 @@ WorkingDirectory=/home/pi
 #path to executable.
 #executable is a bash script which calls jar file
 ExecStart=/usr/local/bin/iot-furnace http
-SuccessExitStatus=143
 TimeoutStopSec=10
 Restart=on-failure
 RestartSec=5

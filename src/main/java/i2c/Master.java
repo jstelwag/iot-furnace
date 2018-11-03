@@ -8,6 +8,7 @@ import util.LogstashLogger;
 import util.Properties;
 
 import java.io.IOException;
+import java.util.Date;
 
 
 /**
@@ -20,9 +21,12 @@ public class Master {
 
     private final I2CBus bus;
 
+    long lastSuccessTime = 0;
+
     public Master() throws IOException, I2CFactory.UnsupportedBusNumberException {
         Properties prop = new Properties();
         String ip = prop.prop.getProperty("monitor.ip");
+        lastSuccessTime = new Date().getTime();
         int port = Integer.parseInt(prop.prop.getProperty("monitor.port"));
         String boilerName = prop.prop.getProperty("boiler.name");
         String boilerSensor = prop.prop.getProperty("boiler.sensor");
@@ -45,20 +49,27 @@ public class Master {
         scanDevices();
         while (true) {
             if (valve.devices.size() + furnace.devices.size() == 0) {
-                System.out.println("There are no devices connected to this master, exiting");
-                LogstashLogger.INSTANCE.message("There are no devices connected to this master");
-                System.exit(1);
-            }
-            for (String deviceId : valve.devices.keySet()) {
-                if (!valve.parse(deviceId)) {
-                    scanDevices();
-                    break;
+                if (new Date().getTime() - lastSuccessTime > 120000) {
+                    LogstashLogger.INSTANCE.message("There are no devices connected to this master, rebooting");
+                    try {
+                        Runtime.getRuntime().exec("sudo reboot");
+                    } catch (IOException e) {
+                        LogstashLogger.INSTANCE.message("Failed to reboot " + e.getMessage());
+                    }
                 }
-            }
-            for (String deviceId : furnace.devices.keySet()) {
-                if (!furnace.parse(deviceId)) {
-                    scanDevices();
-                    break;
+            } else {
+                lastSuccessTime = new Date().getTime();
+                for (String deviceId : valve.devices.keySet()) {
+                    if (!valve.parse(deviceId)) {
+                        scanDevices();
+                        break;
+                    }
+                }
+                for (String deviceId : furnace.devices.keySet()) {
+                    if (!furnace.parse(deviceId)) {
+                        scanDevices();
+                        break;
+                    }
                 }
             }
             try {
@@ -107,7 +118,7 @@ public class Master {
         furnace.devices.clear();
         for (int i = 0; i < 255; i++) {
             try {
-                I2CDevice device = bus.getDevice(i);
+                I2CDevice device = bus.getDevice(i); //throws an exception when the device does not exist
                 device.write("H".getBytes());
                 String response = response(device);
                 LogstashLogger.INSTANCE.message("device " + i + " response " + response);
