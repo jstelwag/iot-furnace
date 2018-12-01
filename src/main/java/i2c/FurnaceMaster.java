@@ -43,13 +43,14 @@ public class FurnaceMaster {
     public boolean parse(String deviceId) {
         String slaveResponse;
 
-        String monitorResponse = "";
+        String monitorResponse;
         String monitorRequest = "http://" + monitorIp + ":" + monitorPort + "/furnace/" + deviceId + "/";
         try {
             monitorResponse = Request.Get(monitorRequest).execute().returnContent().asString();
         } catch (IOException e) {
             //Ignore this error, without a directive from the monitor the furnace is controller
             //with other variables like date and outside temperature
+            monitorResponse = e.getMessage();
             System.out.println("ERROR: did not retrieve monitor response @" + monitorRequest);
             LogstashLogger.INSTANCE.message("ERROR: did not retrieve monitor response @" + monitorRequest);
         }

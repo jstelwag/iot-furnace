@@ -50,7 +50,6 @@ public class FurnaceMonitor {
                 LogstashLogger.INSTANCE.message("Unexpected response iot-monitor @/furnace " + furnaceResponse);
                 // Keep last state in Redis, when the TTL expires the furnace will go to the default mode
             }
-
         } catch (IOException e) {
             LogstashLogger.INSTANCE.message("Connection failure with iot-monitor @/furnace " + e.toString());
             // Keep last state in Redis, when the TTL expires the furnace will go to the default mode

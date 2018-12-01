@@ -99,7 +99,7 @@ void setup() {
   Wire.onReceive(receiveData);
   Wire.onRequest(sendData);
   
-  Serial.println(F("log: furnace controller has started"));
+  Serial.println(F("log:furnace controller has started"));
 }
 
 void loop() {
@@ -132,14 +132,14 @@ void furnaceControl() {
       setPump(false);
       if (furnaceHeatingState) {
         setFurnaceHeating(false);
-        Serial.println(F("log: waiting 4 min for pump to stop"));
+        Serial.println(F("log:waiting 4 min for pump to stop"));
         
         delay(240000); // wait 4 minutes
       }
       setBoilerValve(true);
       delay(5000); // wait for the valve to switch
       setFurnaceBoiler(true);
-      Serial.println(F("log: switched furnace boiler on"));
+      Serial.println(F("log:switched furnace boiler on"));
     }
   } else if (Tboiler < BOILER_STOP_TEMP && furnaceBoilerState) {
     //Keep the furnace buring
@@ -187,18 +187,18 @@ void setFurnaceBoiler(boolean state) {
   }
   if (digitalRead(FURNACE_BOILER_RELAY_PIN) == furnaceBoilerState) {
     digitalWrite(FURNACE_BOILER_RELAY_PIN, !furnaceBoilerState);
-    Serial.println(F("log: changed furnace boiler state"));
+    Serial.println(F("log:changed furnace boiler state"));
   }  
 }
 
 void setBoilerValve(boolean state) {
   if (state && (furnaceHeatingState || furnaceBoilerState)) {
-    Serial.println(F("log: ignoring valve change when furnace is on"));
+    Serial.println(F("log:ignoring valve change when furnace is on"));
   } else {
     boilerValveState = state;
     if (digitalRead(BOILER_VALVE_RELAY_PIN) == boilerValveState) {
       digitalWrite(BOILER_VALVE_RELAY_PIN, !boilerValveState);
-      Serial.println(F("log: changed boiler valve state"));
+      Serial.println(F("log:changed boiler valve state"));
     }
   }
 }
@@ -210,7 +210,7 @@ void setFurnaceHeating(boolean state) {
   }
   if (digitalRead(FURNACE_HEATING_RELAY_PIN) == furnaceHeatingState) {
     digitalWrite(FURNACE_HEATING_RELAY_PIN, !furnaceHeatingState);
-    Serial.println(F("log: changed furnace heating state"));
+    Serial.println(F("log:changed furnace heating state"));
   }
 }
 
@@ -223,7 +223,7 @@ void setPump(boolean state) {
     pumpState = state;
     if (digitalRead(PUMP_RELAY_PIN) == pumpState) {
       digitalWrite(PUMP_RELAY_PIN, !pumpState);
-      Serial.println(F("log: changed pump state"));
+      Serial.println(F("log:changed pump state"));
     }    
   }
 }
@@ -257,10 +257,10 @@ void sendData() {
   }
 }
 
-void receiveData() {
+void receiveData(int howMany) {
   //line format: [furnace: T|F][pump: T|F]
   boolean receivedFurnaceState, receivedPumpState;
-  short i = 0;
+  int i = 0;
   
   while (Wire.available()) {
     if (i == 0) {
@@ -278,7 +278,7 @@ void receiveData() {
     setFurnaceHeating(receivedFurnaceState);
     setPump(receivedPumpState);
   } else if (i > 0) {
-    Serial.println(F("log: received unexpected master command"));
+    Serial.println(F("log:received unexpected master command"));
   }
 }
 
@@ -355,7 +355,7 @@ void setupSensors() {
       sensorCount++;
     }
     if (sensorCount != 1 && sensorCount != 2) {
-      Serial.println("log: ERROR: unexpected amount of sensors");
+      Serial.println("log:ERROR: unexpected amount of sensors");
       delay(30000);
       sensorCount = 0;
     }
