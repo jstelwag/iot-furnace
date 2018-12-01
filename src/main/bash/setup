@@ -51,7 +51,7 @@ sudo chmod +x /usr/local/bin/iot-upgrade
 
 cat <<EOF >iot-furnace
 #!/bin/bash
-sh /home/pi/iot-furnace/src/main/bash/iot-furnace \$@
+/bin/sh /home/pi/iot-furnace/src/main/bash/iot-furnace \$@
 exit 0
 EOF
 sudo mv iot-furnace /usr/local/bin
@@ -69,10 +69,10 @@ cat <<EOF >i2c.service
 [Unit]
 Description=Java i2c master Service
 [Service]
-User=jaap
+User=pi
 # The configuration file application.properties should be here:
 #change this to your workspace
-WorkingDirectory=/home/jaap
+WorkingDirectory=/home/pi
 #path to executable.
 #executable is a bash script which calls jar file
 ExecStart=/usr/local/bin/iot-furnace I2CMaster

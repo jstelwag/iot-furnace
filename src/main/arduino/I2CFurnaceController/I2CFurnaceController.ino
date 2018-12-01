@@ -157,7 +157,7 @@ void furnaceControl() {
 }
 
 void unconnectedHeatingControl() {
-  if (lastConnectTime + DISCONNECT_TIMOUT < millis()) {
+  if (!furnaceBoilerState && lastConnectTime + DISCONNECT_TIMOUT < millis()) {
     //Connection lost, go to native mode
     setPump(false);
     if (sensorCount > 1) {
@@ -170,9 +170,10 @@ void unconnectedHeatingControl() {
       }
     } else {
       //Assume heating must be on...
+      Serial.println(F("log:heating on without auxilary temp"));
       setFurnaceHeating(true);
     }
-    Serial.println(F("log:unconnected"));
+    Serial.println(F("log:unconnected operation"));
     delay(30000);
   }
 }
