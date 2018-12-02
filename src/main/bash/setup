@@ -26,11 +26,11 @@ logstash.ip=192.168.
 logstash.port=9000
 monitor.ip=192.168.
 monitor.port=8000
-services=FurnaceSlave,FurnaceMonitor,I2CMaster
+services=I2CMaster
 loggers=FluxLogger
 iot.id=kasteel_zolder
 boiler.name=boiler120
-boiler.sensor=Tbottom
+boiler.sensor=Ttop
 #boiler.name=boiler200
 #boiler.sensor=Ttop
 EOF
@@ -112,5 +112,27 @@ sudo systemctl daemon-reload
 sudo systemctl enable http.service
 sudo systemctl start http
 sudo systemctl status http
+
+cat <<EOF >i2c-watchdog
+#!/bin/bash
+if [[ $(redis-cli --raw exists boiler120.state) = 0 ]]; then
+  logstaship=$(grep logstash.ip /etc/iot.conf | cut -d "=" -f2)
+  logstashport=$(grep logstash.port /etc/iot.conf | cut -d "=" -f2)
+  iotid=$(grep iot.id /etc/iot.conf | cut -d "=" -f2)
+
+  echo "iot-furnace-${iotid}: Restarting i2c by watchdog" > /dev/udp/${logstaship}/${logstashport}
+
+  sudo systemctl stop i2c
+  wait 10s
+  sudo systemctl start i2c
+fi
+
+exit 0
+EOF
+
+chmod +x i2c-watchdog
+sudo mv i2c-watchdog /usr/local/bin
+
+exit 0
 
 exit 0

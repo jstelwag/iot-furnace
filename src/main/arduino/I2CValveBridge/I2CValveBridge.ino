@@ -213,10 +213,10 @@ boolean relayValue(uint8_t valveNumber, byte value) {
     reverse = false;
   }
 #endif
-#if defined(koetshuis_trap_15) || defined(koetshuis_trap_6) || defined(kasteel_hal)
+#if defined(koetshuis_trap_15) || defined(koetshuis_trap_6) || defined(kasteel_hal) || defined(kasteel_zolder)
   reverse = false;
 #endif
-
+  
   return (reverse == value);
 }
 

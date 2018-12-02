@@ -261,8 +261,7 @@ void receiveData(int howMany) {
   //line format: [furnace: T|F][pump: T|F]
   boolean receivedFurnaceState, receivedPumpState;
   int i = 0;
-  
-  while (Wire.available()) {
+  while (i < howMany && Wire.available()) {
     if (i == 0) {
       receivedFurnaceState = (Wire.read() == 'T');
     } else if (i == 1) {
