@@ -73,13 +73,24 @@ boolean pumpState = false;
 
 const long DISCONNECT_TIMOUT = 180000;
 long lastConnectTime;
-long pumpRunoutTime = 0; // Switch of gracetime
+long runoutTime = 0; // Switch of gracetime
+long timeOut = 0; //time out of grace
+
+byte logCode = 0;
+const byte INFO_STARTED = 1;
+const byte INFO_FURNACE_OFF = 2;
+const byte INFO_BOILER_VALVE_OPEN = 3;
+const byte INFO_BOILER_OFF = 4;
+const byte WARN_UNCONNECTED_AUX_TEMP = 20;
+const byte WARN_UNCONNECTED_ON = 21;
+const byte WARN_UNEXPECTED_MASTER_COMMAND = 22;
+const byte WARN_TEMP_READ_FAILURE = 23;
+const byte ERROR_SENSOR_INIT_COUNT = 40;
 
 const float BOILER_START_TEMP = 50.0;
 const float BOILER_STOP_TEMP = 56.5;
 
 void setup() {
-  Serial.begin(9600);
   pinMode(BOILER_VALVE_RELAY_PIN, OUTPUT);
   pinMode(FURNACE_BOILER_RELAY_PIN, OUTPUT);
   pinMode(FURNACE_HEATING_RELAY_PIN, OUTPUT);
@@ -90,6 +101,7 @@ void setup() {
   digitalWrite(PUMP_RELAY_PIN, !pumpState);
 
 #ifdef test_relays
+  Serial.begin(9600);
   testRelays();
 #endif
 
@@ -98,8 +110,8 @@ void setup() {
   Wire.begin(SLAVE_ADDRESS);
   Wire.onReceive(receiveData);
   Wire.onRequest(sendData);
-  
-  Serial.println(F("log:furnace controller has started"));
+
+  log(INFO_STARTED);
 }
 
 void loop() {
@@ -111,47 +123,46 @@ void loop() {
     Tboiler = 48.0;
     Tauxillary = 12.0;
   #endif
-  furnaceControl();
+  
   if (millis() < lastConnectTime) {
     lastConnectTime = millis();
   }
 
-  if (pumpRunoutTime > 0) {
-    if (millis() < pumpRunoutTime || millis() > pumpRunoutTime + 150000) {
-      pumpRunoutTime = 0;
+  
+  if (runoutTime == 0) {
+    furnaceControl();
+    unconnectedHeatingControl();
+  } else {  
+    if (millis() < runoutTime || millis() > runoutTime + timeOut) {
+      runoutTime = 0;
     }
   }
-  unconnectedHeatingControl();
 }
 
 void furnaceControl() {
   if (Tboiler < BOILER_START_TEMP) {
-    if (furnaceBoilerState) {
-      //Furnace is already on
-    } else {
-      setPump(false);
-      if (furnaceHeatingState) {
-        setFurnaceHeating(false);
-        Serial.println(F("log:waiting 4 min for pump to stop"));
-        
-        delay(240000); // wait 4 minutes
-      }
+    setPump(false);
+    if (furnaceHeatingState) {
+      setFurnaceHeating(false);
+      log(INFO_FURNACE_OFF);
+      grace(150000);
+    } else if (!boilerValveState) {
       setBoilerValve(true);
-      delay(5000); // wait for the valve to switch
+      log(INFO_BOILER_VALVE_OPEN);
+      grace(5000); // wait for the valve to switch
+    } else {
+      setBoilerValve(true); //repeat this to make sure it is set
       setFurnaceBoiler(true);
-      Serial.println(F("log:switched furnace boiler on"));
     }
   } else if (Tboiler < BOILER_STOP_TEMP && furnaceBoilerState) {
     //Keep the furnace buring
   } else {
-    if (!furnaceBoilerState) {
-      //Furnace us already off
-    } else {
+    if (furnaceBoilerState) {
       setFurnaceBoiler(false);
-      Serial.println(F("log:waiting 2 min for pump to stop"));
-      delay(120000);
+      log(INFO_BOILER_OFF);
+      grace(120000); //wait for the pump to stop
+    } else {
       setBoilerValve(false);
-      Serial.println(F("log:switched furnace boiler off"));
     }
   }
 }
@@ -161,19 +172,18 @@ void unconnectedHeatingControl() {
     //Connection lost, go to native mode
     setPump(false);
     if (sensorCount > 1) {
+      log(WARN_UNCONNECTED_AUX_TEMP);
       //There is an auxillary sensor, use it
       if (Tauxillary < 15.0) {
         setFurnaceHeating(true);
-        Serial.println(F("log:cold outside"));
       } else {
         setFurnaceHeating(false);
       }
     } else {
       //Assume heating must be on...
-      Serial.println(F("log:heating on without auxilary temp"));
+      log(WARN_UNCONNECTED_ON);
       setFurnaceHeating(true);
     }
-    Serial.println(F("log:unconnected operation"));
     delay(30000);
   }
 }
@@ -187,18 +197,16 @@ void setFurnaceBoiler(boolean state) {
   }
   if (digitalRead(FURNACE_BOILER_RELAY_PIN) == furnaceBoilerState) {
     digitalWrite(FURNACE_BOILER_RELAY_PIN, !furnaceBoilerState);
-    Serial.println(F("log:changed furnace boiler state"));
-  }  
+  }
 }
 
 void setBoilerValve(boolean state) {
   if (state && (furnaceHeatingState || furnaceBoilerState)) {
-    Serial.println(F("log:ignoring valve change when furnace is on"));
+    //ignore valve change when furnace is on
   } else {
     boilerValveState = state;
     if (digitalRead(BOILER_VALVE_RELAY_PIN) == boilerValveState) {
       digitalWrite(BOILER_VALVE_RELAY_PIN, !boilerValveState);
-      Serial.println(F("log:changed boiler valve state"));
     }
   }
 }
@@ -210,20 +218,18 @@ void setFurnaceHeating(boolean state) {
   }
   if (digitalRead(FURNACE_HEATING_RELAY_PIN) == furnaceHeatingState) {
     digitalWrite(FURNACE_HEATING_RELAY_PIN, !furnaceHeatingState);
-    Serial.println(F("log:changed furnace heating state"));
   }
 }
 
 void setPump(boolean state) {
   if (!furnaceHeatingState && state) {
-    Serial.println(F("log:ignoring request to start pump while furnace is off"));
+    //ignore request to start pump while furnace is off
   } else if (boilerValveState && state) {
-    Serial.println(F("log:ignoring request to start pump while boiler valve is on"));
+    //ignore request to start pump while boiler valve is on
   } else {
     pumpState = state;
     if (digitalRead(PUMP_RELAY_PIN) == pumpState) {
       digitalWrite(PUMP_RELAY_PIN, !pumpState);
-      Serial.println(F("log:changed pump state"));
     }    
   }
 }
@@ -255,6 +261,11 @@ void sendData() {
     dtostrf(Tauxillary,5, 1, result);
     Wire.write(result);
   }
+  if (logCode > 0) {
+    Wire.write(':');
+    Wire.write(logCode);
+    logCode = 0;
+  }
 }
 
 void receiveData(int howMany) {
@@ -277,7 +288,18 @@ void receiveData(int howMany) {
     setFurnaceHeating(receivedFurnaceState);
     setPump(receivedPumpState);
   } else if (i > 0) {
-    Serial.println(F("log:received unexpected master command"));
+    log(WARN_UNEXPECTED_MASTER_COMMAND);
+  }
+}
+
+void grace(long graceTime) {
+  timeOut = graceTime;
+  runoutTime = millis();
+}
+
+void log(byte code) {
+  if (code > logCode) {
+    logCode = code;
   }
 }
 
@@ -285,9 +307,8 @@ void receiveData(int howMany) {
 * Filters typical sensor failure at 85C and -127C
 */
 float filterSensorTemp(float rawSensorTemp, float currentTemp) {
-  if (rawSensorTemp == 85.0 && (abs(rawSensorTemp - 85) > MAX_TEMP_CHANGE_THRESHOLD_85)) {
-    return currentTemp;
-  } else if (rawSensorTemp == -127.0) {
+  if (rawSensorTemp == 85.0 && (abs(rawSensorTemp - 85) > MAX_TEMP_CHANGE_THRESHOLD_85) || rawSensorTemp == -127.0) {
+    log(WARN_TEMP_READ_FAILURE);
     return currentTemp;
   } else {
     return rawSensorTemp;
@@ -343,18 +364,11 @@ void setupSensors() {
         } else {
           auxillarySensorAddress[i] = addr[i];
         }
-        Serial.print(addr[i]);
-      }
-      Serial.print(':');
-      if (sensorCount == 0) {
-        Serial.println(sensors.getTempC(boilerSensorAddress));
-      } else {
-        Serial.println(sensors.getTempC(auxillarySensorAddress));
       }
       sensorCount++;
     }
     if (sensorCount != 1 && sensorCount != 2) {
-      Serial.println("log:ERROR: unexpected amount of sensors");
+      log(ERROR_SENSOR_INIT_COUNT);
       delay(30000);
       sensorCount = 0;
     }

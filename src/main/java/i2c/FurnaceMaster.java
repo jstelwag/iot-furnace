@@ -62,6 +62,7 @@ public class FurnaceMaster {
             if (StringUtils.countMatches(slaveResponse, ":") > 3) {
                 state2Redis(slaveResponse);
                 send2Flux(slaveResponse);
+                send2Log(slaveResponse);
             }
             LogstashLogger.INSTANCE.message("Requested furnace slave after monitor directive: " + monitorResponse
                     + ", slave request: " + slaveRequest + " and slave response: " + slaveResponse);
@@ -118,6 +119,42 @@ public class FurnaceMaster {
             LogstashLogger.INSTANCE.message("ERROR: failed to send to flux " + e.getMessage());
         }
     }
+
+    void send2Log(String slaveResponse) {
+        if (StringUtils.countMatches(slaveResponse, ":") > 4) {
+            int code = Integer.parseInt(slaveResponse.split(":")[4]);
+            switch (code) {
+                case 1:
+                    LogstashLogger.INSTANCE.message("INFO_STARTED");
+                    break;
+                case 2:
+                    LogstashLogger.INSTANCE.message("INFO_FURNACE_OFF");
+                    break;
+                case 3:
+                    LogstashLogger.INSTANCE.message("INFO_BOILER_VALVE_OPEN");
+                    break;
+                case 4:
+                    LogstashLogger.INSTANCE.message("INFO_BOILER_OFF");
+                    break;
+                case 20:
+                    LogstashLogger.INSTANCE.message("WARN_UNCONNECTED_AUX_TEMP");
+                    break;
+                case 21:
+                    LogstashLogger.INSTANCE.message("WARN_UNCONNECTED_ON");
+                    break;
+                case 22:
+                    LogstashLogger.INSTANCE.message("WARN_UNEXPECTED_MASTER_COMMAND");
+                    break;
+                case 23:
+                    LogstashLogger.INSTANCE.message("WARN_TEMP_READ_FAILURE");
+                    break;
+                case 40:
+                    LogstashLogger.INSTANCE.message("ERROR_SENSOR_INIT_COUNT");
+                    break;
+            }
+        }
+    }
+
 
     void state2Redis(String slaveResponse) {
         jedis = new Jedis("localhost");
