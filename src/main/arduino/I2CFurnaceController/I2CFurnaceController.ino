@@ -263,7 +263,7 @@ void sendData() {
   }
   if (logCode > 0) {
     Wire.write(':');
-    Wire.write(logCode);
+    Wire.write(itoa(logCode, result, 10));
     logCode = 0;
   }
 }

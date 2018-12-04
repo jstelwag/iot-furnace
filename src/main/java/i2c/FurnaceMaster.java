@@ -106,7 +106,7 @@ public class FurnaceMaster {
 
     void send2Flux(String slaveResponse) {
         try (FluxLogger flux = new FluxLogger()) {
-            flux.send(boilerName + ".state value=" + slaveResponse.split(":")[2]);
+            flux.send(boilerName + ".state value=" + slaveResponse.split(":")[2].trim());
             if (!TemperatureSensor.isOutlier(slaveResponse.split(":")[3].trim())) {
                 flux.send(boilerName + ".temperature " + boilerSensor + "=" + slaveResponse.split(":")[3].trim());
             }
@@ -123,7 +123,7 @@ public class FurnaceMaster {
 
     void send2Log(String slaveResponse) {
         if (StringUtils.countMatches(slaveResponse, ":") > 4) {
-            int code = Integer.parseInt(slaveResponse.split(":")[4]);
+            int code = Integer.parseInt(slaveResponse.split(":")[4].trim());
             switch (code) {
                 case 1:
                     LogstashLogger.INSTANCE.message("INFO_STARTED");
