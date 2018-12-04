@@ -254,8 +254,7 @@ void sendData() {
   Wire.write(furnaceBoilerState ? '1' : '0');
   Wire.write(':');
   char result[5] = "";
-  dtostrf(Tboiler,5, 1, result);
-  Wire.write(result);
+  Wire.write(dtostrf(Tboiler,5, 1, result));
   if (sensorCount > 1) {
     Wire.write(':');
     dtostrf(Tauxillary,5, 1, result);
@@ -263,7 +262,8 @@ void sendData() {
   }
   if (logCode > 0) {
     Wire.write(':');
-    Wire.write(itoa(logCode, result, 10));
+    char ibuf[3];
+    Wire.write(itoa(logCode, ibuf, 10));
     logCode = 0;
   }
 }

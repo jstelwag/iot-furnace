@@ -123,7 +123,7 @@ public class FurnaceMaster {
 
     void send2Log(String slaveResponse) {
         if (StringUtils.countMatches(slaveResponse, ":") > 4) {
-            int code = Integer.parseInt(slaveResponse.split(":")[4].trim());
+            int code = Integer.parseInt(slaveResponse.split(":")[5].trim());
             switch (code) {
                 case 1:
                     LogstashLogger.INSTANCE.message("INFO_STARTED");
