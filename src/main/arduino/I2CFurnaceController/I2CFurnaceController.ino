@@ -72,8 +72,8 @@ boolean furnaceHeatingState = false;
 boolean pumpState = false;
 
 const long DISCONNECT_TIMOUT = 180000;
-long lastConnectTime;
-long runoutTime = 0; // Switch of gracetime
+unsigned long lastConnectTime;
+unsigned long runoutTime = 0; // Switch of gracetime
 long timeOut = 0; //time out of grace
 
 byte logCode = 0;

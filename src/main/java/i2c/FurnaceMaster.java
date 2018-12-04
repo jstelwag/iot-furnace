@@ -59,6 +59,7 @@ public class FurnaceMaster {
         try {
             devices.get(deviceId).write(slaveRequest.getBytes());
             slaveResponse = Master.response(devices.get(deviceId));
+            LogstashLogger.INSTANCE.message("Request: " + slaveRequest + " / response: " +slaveResponse);
             if (StringUtils.countMatches(slaveResponse, ":") > 3) {
                 state2Redis(slaveResponse);
                 send2Flux(slaveResponse);
