@@ -122,9 +122,12 @@ public class FurnaceMaster {
     }
 
     void send2Log(String slaveResponse) {
-        if (StringUtils.countMatches(slaveResponse, ":") > 4) {
+        if (slaveResponse.split(":").length > 4) {
             int code = Integer.parseInt(slaveResponse.split(":")[5].trim());
             switch (code) {
+                case 0:
+                    // do nothing, no log to mention
+                    break;
                 case 1:
                     LogstashLogger.INSTANCE.message("INFO_STARTED");
                     break;
@@ -151,6 +154,9 @@ public class FurnaceMaster {
                     break;
                 case 40:
                     LogstashLogger.INSTANCE.message("ERROR_SENSOR_INIT_COUNT");
+                    break;
+                default:
+                    LogstashLogger.INSTANCE.message("ERROR: unknow logCode " + code + " received from furnace controller");
                     break;
             }
         }

@@ -64,7 +64,8 @@ byte sensorCount = 0;
 
 DeviceAddress boilerSensorAddress = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
 DeviceAddress auxillarySensorAddress = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
-double Tboiler, Tauxillary;
+double Tboiler = 65.0;
+double Tauxillary = 18.0;
 
 boolean furnaceBoilerState = false;  // state == false is normal heating mode
 boolean boilerValveState = false; // valve == false is normal heating mode
@@ -257,12 +258,11 @@ void sendData() {
   Wire.write(dtostrf(Tboiler,5, 1, result));
   if (sensorCount > 1) {
     Wire.write(':');
-    dtostrf(Tauxillary,5, 1, result);
-    Wire.write(result);
+    Wire.write(dtostrf(Tauxillary,5, 1, result));
   }
   if (logCode > 0) {
     Wire.write(':');
-    char ibuf[3];
+    char ibuf[15] = "";
     Wire.write(itoa(logCode, ibuf, 10));
     logCode = 0;
   }
@@ -372,6 +372,7 @@ void setupSensors() {
       delay(30000);
       sensorCount = 0;
     }
+    oneWire.reset_search();
   }
 }
 
