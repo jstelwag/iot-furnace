@@ -106,14 +106,14 @@ public class FurnaceMaster {
 
     void send2Flux(String slaveResponse) {
         try (FluxLogger flux = new FluxLogger()) {
-            flux.send(boilerName + ".state value=" + slaveResponse.split(":")[1].trim());
-            if (!TemperatureSensor.isOutlier(slaveResponse.split(":")[2].trim())) {
+            flux.send(boilerName + ".state value=" + slaveResponse.split(":")[0].trim());
+            if (!TemperatureSensor.isOutlier(slaveResponse.split(":")[1].trim())) {
                 flux.send(boilerName + ".temperature " + boilerSensor + "=" + slaveResponse.split(":")[2].trim());
             }
-            if (StringUtils.countMatches(slaveResponse, ":") > 3
-                    && !TemperatureSensor.isOutlier(slaveResponse.split(":")[3].trim())) {
-                auxiliaryTemperature = Double.parseDouble(slaveResponse.split(":")[3].trim());
-                flux.send("environment.temperature " + iotId + "=" + slaveResponse.split(":")[3].trim());
+            if (StringUtils.countMatches(slaveResponse, ":") > 2
+                    && !TemperatureSensor.isOutlier(slaveResponse.split(":")[2].trim())) {
+                auxiliaryTemperature = Double.parseDouble(slaveResponse.split(":")[2].trim());
+                flux.send("environment.temperature " + iotId + "=" + slaveResponse.split(":")[2].trim());
             }
         } catch (IOException e) {
             System.out.println("ERROR: failed to send to flux " + e.getMessage());
@@ -122,8 +122,8 @@ public class FurnaceMaster {
     }
 
     void send2Log(String slaveResponse) {
-        if (slaveResponse.split(":").length > 4) {
-            int code = Integer.parseInt(slaveResponse.split(":")[4].trim());
+        if (slaveResponse.split(":").length > 3) {
+            int code = Integer.parseInt(slaveResponse.split(":")[3].trim());
             switch (code) {
                 case 0:
                     // do nothing, no log to mention

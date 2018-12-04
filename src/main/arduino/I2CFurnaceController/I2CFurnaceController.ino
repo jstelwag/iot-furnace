@@ -301,6 +301,8 @@ void receiveData(int howMany) {
     lastConnectTime = millis();
     setFurnaceHeating(receivedFurnaceState);
     setPump(receivedPumpState);
+  } else if (scanRequest) {
+    // do nothing 
   } else if (i > 0) {
     log(WARN_UNEXPECTED_MASTER_COMMAND);
   }
