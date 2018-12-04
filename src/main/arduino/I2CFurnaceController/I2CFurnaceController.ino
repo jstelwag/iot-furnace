@@ -82,6 +82,7 @@ long timeOut = 0; //time out of grace
 boolean scanRequest = false;
 
 byte logCode = 0;
+// logCode values. Higher number is more severe 
 const byte INFO_STARTED = 1;
 const byte INFO_FURNACE_OFF = 2;
 const byte INFO_BOILER_VALVE_OPEN = 3;
@@ -282,27 +283,25 @@ void receiveData(int howMany) {
   boolean receivedFurnaceState, receivedPumpState;
   int i = 0;
   while (i < howMany && Wire.available()) {
+    char request = Wire.read();
     if (i == 0) {
-      char request = Wire.read();
       if (request == 'H') {
         scanRequest = true;
       } else {
-        receivedFurnaceState = (Wire.read() == 'T');
+        receivedFurnaceState = (request == 'T');
       }
     } else if (i == 1) {
-      receivedPumpState = (Wire.read() == 'T');
-    } else {
-      Wire.read();
+      receivedPumpState = (request == 'T');
     }
     i++;
   }
 
-  if (i == 2) {
+  if (scanRequest) {
+    // do nothing 
+  } else if (i == 2) {
     lastConnectTime = millis();
     setFurnaceHeating(receivedFurnaceState);
     setPump(receivedPumpState);
-  } else if (scanRequest) {
-    // do nothing 
   } else if (i > 0) {
     log(WARN_UNEXPECTED_MASTER_COMMAND);
   }

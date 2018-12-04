@@ -59,7 +59,7 @@ public class FurnaceMaster {
         try {
             devices.get(deviceId).write(slaveRequest.getBytes());
             slaveResponse = Master.response(devices.get(deviceId));
-            LogstashLogger.INSTANCE.message("Request: " + slaveRequest + " / response: " +slaveResponse);
+            //LogstashLogger.INSTANCE.message("Request: " + slaveRequest + " / response: " +slaveResponse);
             if (StringUtils.countMatches(slaveResponse, ":") > 2) {
                 state2Redis(slaveResponse);
                 send2Flux(slaveResponse);
@@ -108,9 +108,9 @@ public class FurnaceMaster {
         try (FluxLogger flux = new FluxLogger()) {
             flux.send(boilerName + ".state value=" + slaveResponse.split(":")[0].trim());
             if (!TemperatureSensor.isOutlier(slaveResponse.split(":")[1].trim())) {
-                flux.send(boilerName + ".temperature " + boilerSensor + "=" + slaveResponse.split(":")[2].trim());
+                flux.send(boilerName + ".temperature " + boilerSensor + "=" + slaveResponse.split(":")[1].trim());
             }
-            if (StringUtils.countMatches(slaveResponse, ":") > 2
+            if (StringUtils.countMatches(slaveResponse, ":") > 1
                     && !TemperatureSensor.isOutlier(slaveResponse.split(":")[2].trim())) {
                 auxiliaryTemperature = Double.parseDouble(slaveResponse.split(":")[2].trim());
                 flux.send("environment.temperature " + iotId + "=" + slaveResponse.split(":")[2].trim());
@@ -122,7 +122,7 @@ public class FurnaceMaster {
     }
 
     void send2Log(String slaveResponse) {
-        if (slaveResponse.split(":").length > 3) {
+        if (slaveResponse.split(":").length > 2) {
             int code = Integer.parseInt(slaveResponse.split(":")[3].trim());
             switch (code) {
                 case 0:
@@ -165,8 +165,8 @@ public class FurnaceMaster {
 
     void state2Redis(String slaveResponse) {
         jedis = new Jedis("localhost");
-        boilerState = "1".equals(slaveResponse.split(":")[1].trim());
-        jedis.setex(TemperatureSensor.boiler + ".state", Properties.redisExpireSeconds, slaveResponse.split(":")[1]);
+        boilerState = "1".equals(slaveResponse.split(":")[0].trim());
+        jedis.setex(TemperatureSensor.boiler + ".state", Properties.redisExpireSeconds, slaveResponse.split(":")[0]);
         jedis.close();
     }
 }
