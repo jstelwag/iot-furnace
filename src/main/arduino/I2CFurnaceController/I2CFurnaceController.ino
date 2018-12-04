@@ -42,7 +42,7 @@
   const char DEVICE_ID[] = "F:kasteel_torenkelder";
   const byte SLAVE_ADDRESS = 0x22;
 #elif defined(kasteel_zolder)
-  const char DEVICE_ID[] = "F:kasteel_zolder";
+  const char DEVICE_ID[] = "kasteel_zolder";
   const byte SLAVE_ADDRESS = 0x23;
 #endif
 

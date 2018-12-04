@@ -123,6 +123,9 @@ public class Master {
                 String response = response(device);
                 LogstashLogger.INSTANCE.message("device " + i + " response " + response);
                 if (response.startsWith("F:") && StringUtils.countMatches(response, ":") > 1) {
+                    //deprecate
+                    furnace.devices.put(response.split(":")[1], device);
+                } else if (response.startsWith("H:")) {
                     furnace.devices.put(response.split(":")[1], device);
                 } else if (response.startsWith("V") && response.contains("]")) {
                     valve.devices.put(response.substring(1, response.indexOf("]")), device);
