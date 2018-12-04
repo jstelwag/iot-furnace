@@ -60,7 +60,7 @@ public class FurnaceMaster {
             devices.get(deviceId).write(slaveRequest.getBytes());
             slaveResponse = Master.response(devices.get(deviceId));
             LogstashLogger.INSTANCE.message("Request: " + slaveRequest + " / response: " +slaveResponse);
-            if (StringUtils.countMatches(slaveResponse, ":") > 3) {
+            if (StringUtils.countMatches(slaveResponse, ":") > 2) {
                 state2Redis(slaveResponse);
                 send2Flux(slaveResponse);
                 send2Log(slaveResponse);
@@ -106,14 +106,14 @@ public class FurnaceMaster {
 
     void send2Flux(String slaveResponse) {
         try (FluxLogger flux = new FluxLogger()) {
-            flux.send(boilerName + ".state value=" + slaveResponse.split(":")[2].trim());
-            if (!TemperatureSensor.isOutlier(slaveResponse.split(":")[3].trim())) {
-                flux.send(boilerName + ".temperature " + boilerSensor + "=" + slaveResponse.split(":")[3].trim());
+            flux.send(boilerName + ".state value=" + slaveResponse.split(":")[1].trim());
+            if (!TemperatureSensor.isOutlier(slaveResponse.split(":")[2].trim())) {
+                flux.send(boilerName + ".temperature " + boilerSensor + "=" + slaveResponse.split(":")[2].trim());
             }
-            if (StringUtils.countMatches(slaveResponse, ":") > 4
-                    && !TemperatureSensor.isOutlier(slaveResponse.split(":")[4].trim())) {
-                auxiliaryTemperature = Double.parseDouble(slaveResponse.split(":")[4].trim());
-                flux.send("environment.temperature " + iotId + "=" + slaveResponse.split(":")[4].trim());
+            if (StringUtils.countMatches(slaveResponse, ":") > 3
+                    && !TemperatureSensor.isOutlier(slaveResponse.split(":")[3].trim())) {
+                auxiliaryTemperature = Double.parseDouble(slaveResponse.split(":")[3].trim());
+                flux.send("environment.temperature " + iotId + "=" + slaveResponse.split(":")[3].trim());
             }
         } catch (IOException e) {
             System.out.println("ERROR: failed to send to flux " + e.getMessage());
@@ -123,7 +123,7 @@ public class FurnaceMaster {
 
     void send2Log(String slaveResponse) {
         if (slaveResponse.split(":").length > 4) {
-            int code = Integer.parseInt(slaveResponse.split(":")[5].trim());
+            int code = Integer.parseInt(slaveResponse.split(":")[4].trim());
             switch (code) {
                 case 0:
                     // do nothing, no log to mention
@@ -156,7 +156,7 @@ public class FurnaceMaster {
                     LogstashLogger.INSTANCE.message("ERROR_SENSOR_INIT_COUNT");
                     break;
                 default:
-                    LogstashLogger.INSTANCE.message("ERROR: unknow logCode " + code + " received from furnace controller");
+                    LogstashLogger.INSTANCE.message("ERROR: unknown logCode " + code + " received from furnace controller");
                     break;
             }
         }
@@ -165,8 +165,8 @@ public class FurnaceMaster {
 
     void state2Redis(String slaveResponse) {
         jedis = new Jedis("localhost");
-        boilerState = "1".equals(slaveResponse.split(":")[2].trim());
-        jedis.setex(TemperatureSensor.boiler + ".state", Properties.redisExpireSeconds, slaveResponse.split(":")[2]);
+        boilerState = "1".equals(slaveResponse.split(":")[1].trim());
+        jedis.setex(TemperatureSensor.boiler + ".state", Properties.redisExpireSeconds, slaveResponse.split(":")[1]);
         jedis.close();
     }
 }

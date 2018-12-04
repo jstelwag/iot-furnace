@@ -64,6 +64,7 @@ byte sensorCount = 0;
 
 DeviceAddress boilerSensorAddress = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
 DeviceAddress auxillarySensorAddress = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
+// use values that lead to non-action from the start
 double Tboiler = 65.0;
 double Tauxillary = 18.0;
 
@@ -76,6 +77,9 @@ const long DISCONNECT_TIMOUT = 180000;
 unsigned long lastConnectTime;
 unsigned long runoutTime = 0; // Switch of gracetime
 long timeOut = 0; //time out of grace
+
+//Request from master to return ID
+boolean scanRequest = false;
 
 byte logCode = 0;
 const byte INFO_STARTED = 1;
@@ -250,31 +254,41 @@ void readSensors() {
 }
 
 void sendData() {
-  Wire.write(DEVICE_ID);
-  Wire.write(':');
-  Wire.write(furnaceBoilerState ? '1' : '0');
-  Wire.write(':');
-  char result[5] = "";
-  Wire.write(dtostrf(Tboiler,5, 1, result));
-  if (sensorCount > 1) {
+  if (scanRequest) {
+    scanRequest = false;
+    Wire.write('H');
     Wire.write(':');
-    Wire.write(dtostrf(Tauxillary,5, 1, result));
-  }
-  if (logCode > 0) {
+    Wire.write(DEVICE_ID);
+  } else {
+    Wire.write(furnaceBoilerState ? '1' : '0');
     Wire.write(':');
-    char ibuf[15] = "";
-    Wire.write(itoa(logCode, ibuf, 10));
-    logCode = 0;
+    char result[5] = "";
+    Wire.write(dtostrf(Tboiler,5, 1, result));
+    if (sensorCount > 1) {
+      Wire.write(':');
+      Wire.write(dtostrf(Tauxillary,5, 1, result));
+    }
+    if (logCode > 0) {
+      Wire.write(':');
+      char ibuf[15] = "";
+      Wire.write(itoa(logCode, ibuf, 10));
+      logCode = 0;
+    }
   }
 }
 
 void receiveData(int howMany) {
-  //line format: [furnace: T|F][pump: T|F]
+  //line format: [furnace: T|F][pump: T|F] or [scan request: H]
   boolean receivedFurnaceState, receivedPumpState;
   int i = 0;
   while (i < howMany && Wire.available()) {
     if (i == 0) {
-      receivedFurnaceState = (Wire.read() == 'T');
+      char request = Wire.read();
+      if (request == 'H') {
+        scanRequest = true;
+      } else {
+        receivedFurnaceState = (Wire.read() == 'T');
+      }
     } else if (i == 1) {
       receivedPumpState = (Wire.read() == 'T');
     } else {
