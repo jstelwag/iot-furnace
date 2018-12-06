@@ -1,8 +1,6 @@
 package util;
 
 import org.apache.commons.lang3.math.NumberUtils;
-import util.LogstashLogger;
-import util.Properties;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -29,9 +27,8 @@ public class TemperatureSensor {
                 break;
             default:
                 boiler = "error";
-                System.out.println("FATAL, undefined iot.id (" + iotId + "( for Temperature Sensor");
-                LogstashLogger.INSTANCE.message("FATAL, undefined iot.id (" + iotId + "( for Temperature Sensor");
-                System.exit(0);
+                LogstashLogger.INSTANCE.fatal("Undefined iot.id (" + iotId + ") in /etc/iot.conf.");
+                System.exit(1);
         }
     }
 

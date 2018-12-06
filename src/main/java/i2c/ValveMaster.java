@@ -32,11 +32,10 @@ public class ValveMaster {
                     .bodyString(deviceId + ":", ContentType.DEFAULT_TEXT).execute().returnContent().asString();
             devices.get(deviceId).write(monitorResponse.trim().getBytes());
             slaveResponse = Master.response(devices.get(deviceId));
-            LogstashLogger.INSTANCE.message("Requested valve slave from monitor directive " + monitorResponse +
+            LogstashLogger.INSTANCE.info("Requested valve slave from monitor directive " + monitorResponse +
                     " which after passing on to the slave resulted in the following response: " + slaveResponse);
         } catch (IOException e) {
-            System.out.println("ERROR: Rescanning bus after communication error for " + deviceId);
-            LogstashLogger.INSTANCE.message("ERROR: Rescanning bus after communication error for " + deviceId);
+            LogstashLogger.INSTANCE.warn("Rescanning bus after communication error for " + deviceId);
             return false;
         }
         if (slaveResponse.contains("]")) {
@@ -46,12 +45,10 @@ public class ValveMaster {
                         .bodyString(deviceId + ":" + slaveResponse.substring(0, slaveResponse.indexOf("]") + 1)
                                 , ContentType.DEFAULT_TEXT).execute().returnContent().asString();
             } catch (IOException e) {
-                System.out.println("ERROR: failed to post valvegroup status for " + deviceId);
-                LogstashLogger.INSTANCE.message("ERROR: failed to post valvegroup status for " + deviceId);
+                LogstashLogger.INSTANCE.error("Failed to post valvegroup status for " + deviceId);
             }
         } else {
-            System.out.println("ERROR: received garbage from the ValveGroup micro controller " + deviceId + ": " + slaveResponse);
-            LogstashLogger.INSTANCE.message("ERROR: received garbage from the ValveGroup micro controller: " + slaveResponse);
+            LogstashLogger.INSTANCE.error("Received garbage from the ValveGroup micro controller: " + slaveResponse);
         }
         return true;
     }

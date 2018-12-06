@@ -21,7 +21,7 @@ public class FluxLogger implements Closeable {
     public FluxLogger() throws SocketException, UnknownHostException {
         final Properties properties = new Properties();
         if (StringUtils.isEmpty(properties.prop.getProperty("influx.ip"))) {
-            LogstashLogger.INSTANCE.message("ERROR: influx.ip setting missing from properties");
+            LogstashLogger.INSTANCE.fatal("influx.ip setting missing from properties");
             throw new UnknownHostException("Please set up influx.ip and port in iot.conf");
         }
         iotId = properties.prop.getProperty("iot.id");
@@ -29,14 +29,13 @@ public class FluxLogger implements Closeable {
             host = InetAddress.getByName(properties.prop.getProperty("influx.ip"));
             port = Integer.parseInt(properties.prop.getProperty("influx.port"));
         } catch (UnknownHostException e) {
-            LogstashLogger.INSTANCE.message("ERROR: trying to set up InfluxDB client for unknown host " + e.toString());
+            LogstashLogger.INSTANCE.error("Trying to set up InfluxDB client for unknown host " + e.toString());
             throw e;
         }
         try {
             socket = new DatagramSocket();
         } catch (SocketException e) {
-            System.out.println("Socket error " + e.toString());
-            LogstashLogger.INSTANCE.message("ERROR: unable to open socket to connect to InfluxDB @" + host + ":" + port
+            LogstashLogger.INSTANCE.error("Unable to open socket to connect to InfluxDB @" + host + ":" + port
                     + " " + e.getMessage());
             throw e;
         }
@@ -59,7 +58,7 @@ public class FluxLogger implements Closeable {
                 line += (line.contains("=") ? "," : "") + TemperatureSensor.sensors.get(sensorLocation)
                         + '=' + jedis.get(jedisKey);
             } else {
-                LogstashLogger.INSTANCE.message("WARN: no temperature for " + sensorLocation);
+                LogstashLogger.INSTANCE.warn("No temperature for " + sensorLocation);
             }
             if (line.contains("=")) {
                 send(line);
@@ -77,7 +76,7 @@ public class FluxLogger implements Closeable {
         } else if (jedis.exists("boiler120.state")) {
             send("boiler120.state value=" + jedis.get("boiler120.state"));
         } else {
-            LogstashLogger.INSTANCE.message("ERROR: there is no state in Redis");
+            LogstashLogger.INSTANCE.error("There is no state in Redis to log boiler state");
         }
     }
 
@@ -87,15 +86,16 @@ public class FluxLogger implements Closeable {
             DatagramPacket packet = new DatagramPacket(data, data.length, host, port);
             socket.send(packet);
         } catch (IOException e) {
-            LogstashLogger.INSTANCE.message("ERROR: for UDP connection " + socket.isConnected() + ", @"
-                    + host.getHostAddress() + ":" + port + ", socket " + socket.isBound());
+            LogstashLogger.INSTANCE.error("IOException for UDP connection " + socket.isConnected() + ", @"
+                    + host.getHostAddress() + ":" + port + ", socket " + socket.isBound() + ": "
+                    + e.getMessage());
         }
 
         return this;
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         if (socket != null)
             socket.close();
     }

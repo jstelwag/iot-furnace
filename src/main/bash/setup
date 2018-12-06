@@ -120,7 +120,7 @@ if [[ $(redis-cli --raw exists boiler120.state) = 0 ]]; then
   logstashport=$(grep logstash.port /etc/iot.conf | cut -d "=" -f2)
   iotid=$(grep iot.id /etc/iot.conf | cut -d "=" -f2)
 
-  echo "iot-furnace-${iotid}: Restarting i2c by watchdog" > /dev/udp/${logstaship}/${logstashport}
+  echo "iot-furnace-${iotid}:WARN: Restarting i2c by watchdog" > /dev/udp/${logstaship}/${logstashport}
 
   sudo systemctl stop i2c
   wait 10s

@@ -37,10 +37,9 @@ public class Master {
 
         try {
             bus = I2CFactory.getInstance(I2CBus.BUS_1);
-            LogstashLogger.INSTANCE.message("Started i2c master");
+            LogstashLogger.INSTANCE.info("Started i2c master");
         } catch (I2CFactory.UnsupportedBusNumberException | IOException e) {
-            System.out.println("FATAL: cannot connect i2c bus " + e.getMessage());
-            LogstashLogger.INSTANCE.message("FATAL: cannot connect i2c bus " + e.getMessage());
+            LogstashLogger.INSTANCE.fatal("Cannot connect i2c bus " + e.getMessage());
             throw e;
         }
     }
@@ -50,11 +49,11 @@ public class Master {
         while (true) {
             if (valve.devices.size() + furnace.devices.size() == 0) {
                 if (new Date().getTime() - lastSuccessTime > 120000) {
-                    LogstashLogger.INSTANCE.message("There are no devices connected to this master, rebooting");
+                    LogstashLogger.INSTANCE.error("There are no devices connected to this master, rebooting");
                     try {
                         Runtime.getRuntime().exec("sudo reboot");
                     } catch (IOException e) {
-                        LogstashLogger.INSTANCE.message("Failed to reboot " + e.getMessage());
+                        LogstashLogger.INSTANCE.fatal("Failed to reboot " + e.getMessage());
                     }
                 }
             } else {
@@ -121,7 +120,7 @@ public class Master {
                 I2CDevice device = bus.getDevice(i); //throws an exception when the device does not exist
                 device.write("H".getBytes());
                 String response = response(device);
-                LogstashLogger.INSTANCE.message("device " + i + " response " + response);
+                LogstashLogger.INSTANCE.info("device " + i + " response " + response);
                 if (response.startsWith("F:") && StringUtils.countMatches(response, ":") > 1) {
                     //deprecate
                     furnace.devices.put(response.split(":")[1], device);
@@ -130,12 +129,11 @@ public class Master {
                 } else if (response.startsWith("V") && response.contains("]")) {
                     valve.devices.put(response.substring(1, response.indexOf("]")), device);
                 } else {
-                    System.out.println("Unrecognized device " + response);
-                    LogstashLogger.INSTANCE.message("Unrecognized device " + response);
+                    LogstashLogger.INSTANCE.error("Unrecognized device " + response);
                 }
             } catch (IOException ignored) {
             }
         }
-        LogstashLogger.INSTANCE.message("Scanned " + (valve.devices.size() + furnace.devices.size()) + " devices");
+        LogstashLogger.INSTANCE.info("Scanned " + (valve.devices.size() + furnace.devices.size()) + " devices");
     }
 }

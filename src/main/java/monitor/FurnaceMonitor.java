@@ -33,13 +33,13 @@ public class FurnaceMonitor {
             String furnaceRequest = "http://" + monitorIp +":" + monitorPort + "/furnace/" + iotId + "/";
             String furnaceResponse = Request.Get(furnaceRequest)
                     .execute().returnContent().asString();
-            LogstashLogger.INSTANCE.message("Directive from the monitor: " + furnaceResponse);
+            LogstashLogger.INSTANCE.info("Directive from the monitor: " + furnaceResponse);
             if (furnaceResponse.contains("furnace\"=\"ON")) {
                 jedis.setex(FURNACE_KEY, TTL, "ON");
             } else if (furnaceResponse.contains("OFF")) {
                 jedis.setex(FURNACE_KEY, TTL, "OFF");
             } else {
-                LogstashLogger.INSTANCE.message("Unexpected response iot-monitor @/furnace " + furnaceResponse);
+                LogstashLogger.INSTANCE.error("Unexpected response iot-monitor @/furnace " + furnaceResponse);
                 // Keep last state in Redis, when the TTL expires the furnace will go to the default mode
             }
             if (furnaceResponse.contains("pump\"=\"ON")) {
@@ -47,13 +47,12 @@ public class FurnaceMonitor {
             } else if (furnaceResponse.contains("OFF")) {
                 jedis.setex(PUMP_KEY, TTL, "OFF");
             } else {
-                LogstashLogger.INSTANCE.message("Unexpected response iot-monitor @/furnace " + furnaceResponse);
+                LogstashLogger.INSTANCE.error("Unexpected response iot-monitor @/furnace " + furnaceResponse);
                 // Keep last state in Redis, when the TTL expires the furnace will go to the default mode
             }
         } catch (IOException e) {
-            LogstashLogger.INSTANCE.message("Connection failure with iot-monitor @/furnace " + e.toString());
+            LogstashLogger.INSTANCE.error("Connection failure with iot-monitor @/furnace " + e.toString());
             // Keep last state in Redis, when the TTL expires the furnace will go to the default mode
-            e.printStackTrace();
         }
         jedis.close();
     }

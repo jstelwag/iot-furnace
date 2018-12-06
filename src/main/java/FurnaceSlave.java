@@ -68,7 +68,7 @@ public class FurnaceSlave implements SerialPortEventListener {
             }
         }
         if (portId == null) {
-            LogstashLogger.INSTANCE.message("ERROR: could not find USB at " + prop.prop.getProperty("usb.furnace"));
+            LogstashLogger.INSTANCE.error("Could not find USB at " + prop.prop.getProperty("usb.furnace"));
             close();
             System.exit(0);
         }
@@ -117,7 +117,7 @@ public class FurnaceSlave implements SerialPortEventListener {
     public synchronized void serialEvent(SerialPortEvent oEvent) {
         jedis = new Jedis("localhost");
         if (jedis.exists(STARTTIME) && !jedis.get(STARTTIME).equals(startTime)) {
-            LogstashLogger.INSTANCE.message("Connection hijack, exiting SolarSlave");
+            LogstashLogger.INSTANCE.info("Connection hijack, exiting SolarSlave");
             jedis.close();
             System.exit(0);
         }

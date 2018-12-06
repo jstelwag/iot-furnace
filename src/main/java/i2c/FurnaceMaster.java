@@ -51,8 +51,7 @@ public class FurnaceMaster {
             //Ignore this error, without a directive from the monitor the furnace is controller
             //with other variables like date and outside temperature
             monitorResponse = e.getMessage();
-            System.out.println("ERROR: did not retrieve monitor response @" + monitorRequest);
-            LogstashLogger.INSTANCE.message("ERROR: did not retrieve monitor response @" + monitorRequest);
+            LogstashLogger.INSTANCE.error("Did not retrieve monitor response @" + monitorRequest);
         }
         String slaveRequest = furnaceState(monitorResponse) ? "T" : "F";
         slaveRequest += pumpState(monitorResponse) ? "T" : "F";
@@ -65,11 +64,10 @@ public class FurnaceMaster {
                 send2Flux(slaveResponse);
                 send2Log(slaveResponse);
             }
-            LogstashLogger.INSTANCE.message("Requested furnace slave after monitor directive: " + monitorResponse
+            LogstashLogger.INSTANCE.info("Requested furnace slave after monitor directive: " + monitorResponse
                     + ", slave request: " + slaveRequest + " and slave response: " + slaveResponse);
         } catch (IOException e) {
-            System.out.println("ERROR: Rescanning bus after communication error for " + deviceId);
-            LogstashLogger.INSTANCE.message("ERROR: Rescanning bus after communication error for " + deviceId);
+            LogstashLogger.INSTANCE.error("Rescanning bus after communication error for " + deviceId);
             return false;
         }
 
@@ -83,20 +81,20 @@ public class FurnaceMaster {
         if (furnaceResponse.contains("furnace\"=\"OFF")) {
             return false;
         }
-        LogstashLogger.INSTANCE.message("Unexpected response iot-monitor @/furnace " + furnaceResponse);
+        LogstashLogger.INSTANCE.error("Unexpected response iot-monitor @/furnace " + furnaceResponse);
         Calendar now = Calendar.getInstance();
         if (now.get(Calendar.HOUR) < 23 && now.get(Calendar.HOUR) > 5) {
             return false;
         }
 
         if (auxiliaryTemperature != null) {
-            LogstashLogger.INSTANCE.message("No iot-monitor furnace state available, using outside temperature "
+            LogstashLogger.INSTANCE.warn("No iot-monitor furnace state available, using outside temperature "
                     + auxiliaryTemperature);
             return auxiliaryTemperature < 16.0;
         }
         jedis.close();
 
-        LogstashLogger.INSTANCE.message("No iot-monitor furnace state available, using month based default");
+        LogstashLogger.INSTANCE.warn("No iot-monitor furnace state available, using month based default");
         return now.get(Calendar.MONTH) < 4 || now.get(Calendar.MONTH) > 9;
     }
 
@@ -116,8 +114,7 @@ public class FurnaceMaster {
                 flux.send("environment.temperature " + iotId + "=" + slaveResponse.split(":")[2].trim());
             }
         } catch (IOException e) {
-            System.out.println("ERROR: failed to send to flux " + e.getMessage());
-            LogstashLogger.INSTANCE.message("ERROR: failed to send to flux " + e.getMessage());
+            LogstashLogger.INSTANCE.error("Failed to send to flux " + e.getMessage());
         }
     }
 
@@ -129,34 +126,34 @@ public class FurnaceMaster {
                     // do nothing, no log to mention
                     break;
                 case 1:
-                    LogstashLogger.INSTANCE.message("INFO: Starting (furnace controller)");
+                    LogstashLogger.INSTANCE.info("Starting (furnace controller)");
                     break;
                 case 2:
-                    LogstashLogger.INSTANCE.message("INFO: Furnace switching off (furnace controller)");
+                    LogstashLogger.INSTANCE.info("Furnace switching off (furnace controller)");
                     break;
                 case 3:
-                    LogstashLogger.INSTANCE.message("INFO: Opening boiler valve (furnace controller)");
+                    LogstashLogger.INSTANCE.info("Opening boiler valve (furnace controller)");
                     break;
                 case 4:
-                    LogstashLogger.INSTANCE.message("INFO: Turning off boiler (furnace controller)");
+                    LogstashLogger.INSTANCE.info("Turning off boiler (furnace controller)");
                     break;
                 case 20:
-                    LogstashLogger.INSTANCE.message("WARN: Unconnected, using aux temp (furnace controller)");
+                    LogstashLogger.INSTANCE.warn("Unconnected, using aux temp (furnace controller)");
                     break;
                 case 21:
-                    LogstashLogger.INSTANCE.message("WARN: Unconnected, simply turned on (furnace controller)");
+                    LogstashLogger.INSTANCE.warn("Unconnected, simply turned on (furnace controller)");
                     break;
                 case 22:
-                    LogstashLogger.INSTANCE.message("WARN: Unexpected master command (furnace controller)");
+                    LogstashLogger.INSTANCE.warn("Unexpected master command (furnace controller)");
                     break;
                 case 23:
-                    LogstashLogger.INSTANCE.message("WARN: Temperature read failure (furnace controller)");
+                    LogstashLogger.INSTANCE.warn("Temperature read failure (furnace controller)");
                     break;
                 case 40:
-                    LogstashLogger.INSTANCE.message("ERROR: Sensor init: incomplete sensor count (furnace controller)");
+                    LogstashLogger.INSTANCE.error("Sensor init: incomplete sensor count (furnace controller)");
                     break;
                 default:
-                    LogstashLogger.INSTANCE.message("ERROR: unknown logCode: " + code + " (furnace controller)");
+                    LogstashLogger.INSTANCE.error("Unknown logCode: " + code + " from furnace controller");
                     break;
             }
         }
