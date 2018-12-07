@@ -6,12 +6,12 @@ logstashport=$(grep logstash.port /etc/iot.conf | cut -d "=" -f2)
 iotid=$(grep iot.id /etc/iot.conf | cut -d "=" -f2)
 
 if [ -z "$(git status --porcelain)" ]; then
-  echo "iot-furnace-${iotid}:INFO: No changes in repository (iot-upgrade)" > /dev/udp/${logstaship}/${logstashport}
+  /bin/echo "iot-furnace-${iotid}:INFO: No changes in repository (iot-upgrade)" > /dev/udp/${logstaship}/${logstashport}
 else
   /usr/bin/git pull
   /usr/bin/mvn clean install
   /usr/bin/crontab /home/pi/iot-furnace/src/main/bash/crontab
-  echo "iot-furnace-${iotid}:INFO: Update completed (iot-upgrade)" > /dev/udp/${logstaship}/${logstashport}
+  /bin/echo "iot-furnace-${iotid}:INFO: Update completed (iot-upgrade)" > /dev/udp/${logstaship}/${logstashport}
 fi
 
 exit 0
