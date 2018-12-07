@@ -181,7 +181,7 @@ public class FurnaceSlave implements SerialPortEventListener {
     }
 
     public void run() {
-        LogstashLogger.INSTANCE.message("Starting FurnaceSlave");
+        LogstashLogger.INSTANCE.info("Starting FurnaceSlave");
         Thread t = new Thread() {
             public void run() {
                 try {
