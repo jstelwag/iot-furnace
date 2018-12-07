@@ -143,7 +143,7 @@ public class FurnaceSlave implements SerialPortEventListener {
                         furnaceState = "ON".equals(jedis.get(FurnaceMonitor.FURNACE_KEY));
                     } else {
                         Calendar now = Calendar.getInstance();
-                        LogstashLogger.INSTANCE.message("No iot-monitor furnace state available, using month based default");
+                        LogstashLogger.INSTANCE.warn("No iot-monitor furnace state available, using month based default");
                         furnaceState = (now.get(Calendar.MONTH) < 4 || now.get(Calendar.MONTH) > 9) &&
                                 (now.get(Calendar.HOUR) < 23 && now.get(Calendar.HOUR) > 5);
                     }
@@ -152,14 +152,14 @@ public class FurnaceSlave implements SerialPortEventListener {
                     if (jedis.exists(FurnaceMonitor.PUMP_KEY)) {
                         pumpState = "ON".equals(jedis.get(FurnaceMonitor.PUMP_KEY));
                     } else {
-                        LogstashLogger.INSTANCE.message("No iot-monitor pump state available");
+                        LogstashLogger.INSTANCE.warn("No iot-monitor pump state available");
                     }
                     try {
                         serialPort.getOutputStream().write(furnaceState ? 'T' : 'F');
                         serialPort.getOutputStream().write(pumpState ? 'T' : 'F');
                         serialPort.getOutputStream().flush();
                     } catch (IOException e) {
-                        LogstashLogger.INSTANCE.message("ERROR: writing to furnace controller");
+                        LogstashLogger.INSTANCE.error("Writing to furnace controller");
                         close();
                         System.exit(0);
                     }
@@ -169,10 +169,10 @@ public class FurnaceSlave implements SerialPortEventListener {
                         flux.send(iotId + " pumpState=" + (pumpState ? "1i" : "0i"));
                     }
                 } else {
-                    LogstashLogger.INSTANCE.message("ERROR: received garbage from the Furnace micro controller: " + inputLine);
+                    LogstashLogger.INSTANCE.error("Received garbage from the Furnace micro controller: " + inputLine);
                 }
             } catch (IOException e) {
-                LogstashLogger.INSTANCE.message("ERROR: problem reading serial input from USB, exiting " + e.toString());
+                LogstashLogger.INSTANCE.error("Problem reading serial input from USB, exiting " + e.toString());
                 close();
                 System.exit(0);
             }
