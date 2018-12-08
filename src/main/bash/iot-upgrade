@@ -5,7 +5,8 @@ logstaship=$(grep logstash.ip /etc/iot.conf | cut -d "=" -f2)
 logstashport=$(grep logstash.port /etc/iot.conf | cut -d "=" -f2)
 iotid=$(grep iot.id /etc/iot.conf | cut -d "=" -f2)
 
-if [ -z "$(git status --porcelain)" ]; then
+gitstatus=$(git pull)
+if [ "${gitstatus}" = "Already up-to-date." ]; then
   /bin/echo "iot-furnace-${iotid}:INFO: No changes in repository (iot-upgrade)" > /dev/udp/${logstaship}/${logstashport}
 else
   /usr/bin/git pull

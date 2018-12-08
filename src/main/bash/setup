@@ -39,7 +39,7 @@ sudo mv iot.conf /etc
 cd /tmp
 cat <<EOF >iot-upgrade
 #!/bin/bash
-/bin/sh /home/pi/iot-furnace/src/main/bash/iot-upgrade
+/bin/bash /home/pi/iot-furnace/src/main/bash/iot-upgrade
 exit 0
 EOF
 sudo mv iot-upgrade /usr/local/bin
@@ -47,7 +47,7 @@ sudo chmod +x /usr/local/bin/iot-upgrade
 
 cat <<EOF >iot-furnace
 #!/bin/bash
-/bin/sh /home/pi/iot-furnace/src/main/bash/iot-furnace \$@
+/bin/bash /home/pi/iot-furnace/src/main/bash/iot-furnace \$@
 exit 0
 EOF
 sudo mv iot-furnace /usr/local/bin
