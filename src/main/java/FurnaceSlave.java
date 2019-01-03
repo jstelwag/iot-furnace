@@ -164,9 +164,9 @@ public class FurnaceSlave implements SerialPortEventListener {
                         System.exit(0);
                     }
                     try (FluxLogger flux = new FluxLogger()) {
-                        flux.send(iotId + " state=" + (furnaceState ? "1i" : "0i"));
+                        flux.send("furnace,name=\"" + iotId + "\" stateConfirmed=" + (furnaceState ? "1i" : "0i"));
                         //todo set if pump exists
-                        flux.send(iotId + " pumpState=" + (pumpState ? "1i" : "0i"));
+                        flux.send("furnace,name=\"" + iotId + "\" pumpState=" + (pumpState ? "1i" : "0i"));
                     }
                 } else {
                     LogstashLogger.INSTANCE.error("Received garbage from the Furnace micro controller: " + inputLine);

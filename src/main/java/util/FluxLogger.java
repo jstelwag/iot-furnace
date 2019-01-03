@@ -72,9 +72,9 @@ public class FluxLogger implements Closeable {
     @Deprecated
     private void logState() {
         if (jedis.exists("boiler200.state")) {
-            send("boiler200.state value=" + jedis.get("boiler200.state"));
+            send("boiler,name=boiler200 state=" + jedis.get("boiler200.state"));
         } else if (jedis.exists("boiler120.state")) {
-            send("boiler120.state value=" + jedis.get("boiler120.state"));
+            send("boiler,name=boiler120 state=" + jedis.get("boiler120.state"));
         } else {
             LogstashLogger.INSTANCE.error("There is no state in Redis to log boiler state");
         }

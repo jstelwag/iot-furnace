@@ -104,9 +104,10 @@ public class FurnaceMaster {
 
     void send2Flux(String slaveResponse) {
         try (FluxLogger flux = new FluxLogger()) {
-            flux.send(boilerName + ".state value=" + slaveResponse.split(":")[0].trim());
+            flux.send("boiler,name=" + boilerName + " state=" + slaveResponse.split(":")[0].trim());
             if (!TemperatureSensor.isOutlier(slaveResponse.split(":")[1].trim())) {
-                flux.send(boilerName + ".temperature " + boilerSensor + "=" + slaveResponse.split(":")[1].trim());
+                flux.send("boiler,name=" + boilerName + ",position=" + boilerSensor + " temperature="
+                        + slaveResponse.split(":")[1].trim());
             }
             if (StringUtils.countMatches(slaveResponse, ":") > 1
                     && !TemperatureSensor.isOutlier(slaveResponse.split(":")[2].trim())) {
