@@ -133,7 +133,6 @@ void loop() {
   if (millis() < lastConnectTime) {
     lastConnectTime = millis();
   }
-
   
   if (runoutTime == 0) {
     furnaceControl();

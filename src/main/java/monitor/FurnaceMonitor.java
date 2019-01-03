@@ -15,7 +15,7 @@ public class FurnaceMonitor {
     private final int monitorPort;
     private final String iotId;
 
-    public static final String FURNACE_KEY = "furnace.state";
+    public static final String FURNACE_KEY = "furnace.stateActual";
     public static final String PUMP_KEY = "furnace.pumpState";
     private final int TTL = 60*10;
 
@@ -26,10 +26,8 @@ public class FurnaceMonitor {
         iotId = properties.prop.getProperty("iot.id");
     }
 
-
     public void run() {
-        Jedis jedis = new Jedis("localhost");
-        try {
+        try (Jedis jedis = new Jedis("localhost")) {
             String furnaceRequest = "http://" + monitorIp +":" + monitorPort + "/furnace/" + iotId + "/";
             String furnaceResponse = Request.Get(furnaceRequest)
                     .execute().returnContent().asString();
@@ -54,6 +52,5 @@ public class FurnaceMonitor {
             LogstashLogger.INSTANCE.error("Connection failure with iot-monitor @/furnace " + e.toString());
             // Keep last state in Redis, when the TTL expires the furnace will go to the default mode
         }
-        jedis.close();
     }
 }
