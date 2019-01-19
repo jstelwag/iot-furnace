@@ -120,7 +120,7 @@ public class Master {
                 I2CDevice device = bus.getDevice(i); //throws an exception when the device does not exist
                 device.write("H".getBytes());
                 String response = response(device);
-                LogstashLogger.INSTANCE.info("device " + i + " response " + response);
+                LogstashLogger.INSTANCE.info("Device " + i + " response " + response);
                 if (response.startsWith("F:") && StringUtils.countMatches(response, ":") > 1) {
                     //deprecate
                     furnace.devices.put(response.split(":")[1], device);

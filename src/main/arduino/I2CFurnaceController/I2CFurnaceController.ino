@@ -1,5 +1,5 @@
 /*
-    Copyright 2018 Jaap Stelwagen
+    Copyright 2019 Jaap Stelwagen
     
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@
 #define nnkasteel_torenkelder
 #define kasteel_zolder
 
-#define ntest_relays
+#define ntest
 #define Nmock_onewire
 
 #ifdef koetshuis_kelder
@@ -106,7 +106,7 @@ void setup() {
   digitalWrite(FURNACE_HEATING_RELAY_PIN, !furnaceHeatingState);
   digitalWrite(PUMP_RELAY_PIN, !pumpState);
 
-#ifdef test_relays
+#ifdef test
   Serial.begin(9600);
   testRelays();
 #endif
@@ -118,6 +118,9 @@ void setup() {
   Wire.onRequest(sendData);
 
   log(INFO_STARTED);
+  #ifdef test
+  Serial.println(F("Init ready"));
+  #endif
 }
 
 void loop() {
@@ -251,6 +254,11 @@ void readSensors() {
   if (sensorCount > 1) {
     Tauxillary = filterSensorTemp(sensors.getTempC(auxillarySensorAddress), Tauxillary);
   }
+  
+  #ifdef test
+  Serial.print(F("Boiler "));
+  Serial.println(Tboiler);
+  #endif
 }
 
 void sendData() {
@@ -259,6 +267,9 @@ void sendData() {
     Wire.write('H');
     Wire.write(':');
     Wire.write(DEVICE_ID);
+    #ifdef test
+    Serial.println(F("Scanrequest"));
+    #endif    
   } else {
     Wire.write(furnaceBoilerState ? '1' : '0');
     Wire.write(':');
@@ -301,8 +312,14 @@ void receiveData(int howMany) {
     lastConnectTime = millis();
     setFurnaceHeating(receivedFurnaceState);
     setPump(receivedPumpState);
+    #ifdef test
+    Serial.println(F("i2c request OK"));
+    #endif 
   } else if (i > 0) {
     log(WARN_UNEXPECTED_MASTER_COMMAND);
+    #ifdef test
+    Serial.println(F("i2c request fail"));
+    #endif 
   }
 }
 
@@ -329,7 +346,7 @@ float filterSensorTemp(float rawSensorTemp, float currentTemp) {
   }
 }
 
-#ifdef test_relays
+#ifdef test
 void testRelays() {
   Serial.println(F("FURNACE_BOILER_RELAY_PIN on 5"));
   digitalWrite(FURNACE_BOILER_RELAY_PIN, false);
@@ -387,6 +404,11 @@ void setupSensors() {
       sensorCount = 0;
     }
     oneWire.reset_search();
+
+    #ifdef test
+    Serial.print(F("Sensors "));
+    Serial.println(sensorCount);
+    #endif 
   }
 }
 

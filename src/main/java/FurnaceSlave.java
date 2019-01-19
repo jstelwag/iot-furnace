@@ -19,6 +19,7 @@ import java.util.Enumeration;
 /**
  * Created by Jaap on 25-7-2016.
  */
+@Deprecated
 public class FurnaceSlave implements SerialPortEventListener {
 
     private final static int TTL = 60;
@@ -130,7 +131,7 @@ public class FurnaceSlave implements SerialPortEventListener {
                 } else if (StringUtils.countMatches(inputLine, ":") >= 1) {
                     jedis.setex(TemperatureSensor.boiler + ".state", Properties.redisExpireSeconds, inputLine.split(":")[0]);
                     if (!TemperatureSensor.isOutlier(inputLine.split(":")[1])) {
-                        jedis.setex(TemperatureSensor.boiler + ".temperature", Properties.redisExpireSeconds, inputLine.split(":")[1]);
+                        jedis.setex(TemperatureSensor.boiler + "." + TemperatureSensor.position, Properties.redisExpireSeconds, inputLine.split(":")[1]);
                     }
                     if (StringUtils.countMatches(inputLine, ":") > 1) {
                         if (!TemperatureSensor.isOutlier(inputLine.split(":")[2])) {

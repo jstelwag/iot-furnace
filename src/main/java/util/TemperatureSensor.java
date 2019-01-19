@@ -10,26 +10,13 @@ import java.util.Map;
  */
 public class TemperatureSensor {
 
-    public final static Map<String, String> sensors = new HashMap<>();
+    public final static String position;
     public final static String boiler;
 
     static {
         Properties prop = new Properties();
-        String iotId = prop.prop.getProperty("iot.id");
-        switch (iotId) {
-            case "koetshuis_kelder":
-                boiler = "boiler200";
-                sensors.put(boiler, "Ttop");
-                break;
-            case "kasteel_zolder":
-                boiler = "boiler120";
-                sensors.put(boiler, "Tbottom");
-                break;
-            default:
-                boiler = "error";
-                LogstashLogger.INSTANCE.fatal("Undefined iot.id (" + iotId + ") in /etc/iot.conf.");
-                System.exit(1);
-        }
+        boiler = prop.prop.getProperty("boiler.name");
+        position = prop.prop.getProperty("boiler.sensor");
     }
 
     public static boolean isOutlier(String temperature) {
