@@ -53,7 +53,7 @@ public class FurnaceSlave implements SerialPortEventListener {
         jedis.close();
 
         Properties prop = new Properties();
-        iotId = prop.prop.getProperty("iot.id");
+        iotId = prop.deviceName;
         // the next line is for Raspberry Pi and
         // gets us into the while loop and was suggested here was suggested http://www.raspberrypi.org/phpBB3/viewtopic.php?f=81&t=32186
         System.setProperty("gnu.io.rxtx.SerialPorts", prop.prop.getProperty("usb.furnace"));

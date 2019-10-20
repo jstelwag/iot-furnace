@@ -4,6 +4,7 @@ import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
 import org.apache.commons.lang3.StringUtils;
+import redis.clients.jedis.Jedis;
 import util.LogstashLogger;
 import util.Properties;
 
@@ -25,12 +26,12 @@ public class Master {
 
     public Master() throws IOException, I2CFactory.UnsupportedBusNumberException {
         Properties prop = new Properties();
-        String ip = prop.prop.getProperty("monitor.ip");
+        String ip = prop.monitorIp;
         lastSuccessTime = new Date().getTime();
-        int port = Integer.parseInt(prop.prop.getProperty("monitor.port"));
-        String boilerName = prop.prop.getProperty("boiler.name");
-        String boilerSensor = prop.prop.getProperty("boiler.sensor");
-        String iotId = prop.prop.getProperty("iot.id") == null ? "valvegroup" : prop.prop.getProperty("iot.id");
+        int port = prop.monitorPort;
+        String boilerName = prop.boilerName;
+        String boilerSensor = prop.boilerSensor;
+        String iotId = prop.deviceName;
 
         valve = new ValveMaster(ip, port);
         furnace = new FurnaceMaster(ip, port, boilerName, boilerSensor, iotId);
@@ -134,6 +135,10 @@ public class Master {
             } catch (IOException ignored) {
             }
         }
+        Jedis jedis = new Jedis("localhost");
+        jedis.set("valveCount", Integer.toString(valve.devices.size()));
+        jedis.set("furnaceCount", Integer.toString(furnace.devices.size()));
+        jedis.close();
         LogstashLogger.INSTANCE.info("Scanned " + (valve.devices.size() + furnace.devices.size()) + " devices");
     }
 }

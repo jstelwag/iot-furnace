@@ -15,8 +15,8 @@ public class TemperatureSensor {
 
     static {
         Properties prop = new Properties();
-        boiler = prop.prop.getProperty("boiler.name");
-        position = prop.prop.getProperty("boiler.sensor");
+        boiler = prop.boilerName;
+        position = prop.boilerSensor;
     }
 
     public static boolean isOutlier(String temperature) {

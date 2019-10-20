@@ -42,6 +42,10 @@ public class Main {
                 case "http":
                     startHttp(8080);
                     break;
+                case "ID":
+                    Properties prop = new Properties();
+                    System.out.println("MAC: " + prop.mac + " - " + prop.deviceName);
+                    break;
                 default:
                     LogstashLogger.INSTANCE.error("Unknown parameter for Main " + args[0]);
                     break;
@@ -87,14 +91,14 @@ public class Main {
 
 
     public static boolean hasService(String service) {
-        final Properties properties = new Properties();
-            return StringUtils.isEmpty(properties.prop.getProperty("services"))
-                    || Arrays.asList(properties.prop.getProperty("services").split(",")).contains(service);
+        final Properties prop = new Properties();
+            return StringUtils.isEmpty(prop.services)
+                    || Arrays.asList(prop.services.split(",")).contains(service);
     }
     public static boolean hasLogger(String logger) {
-        final Properties properties = new Properties();
-        return StringUtils.isEmpty(properties.prop.getProperty("loggers"))
-                || Arrays.asList(properties.prop.getProperty("services").split(",")).contains(logger);
+        final Properties prop = new Properties();
+        return StringUtils.isEmpty(prop.loggers)
+                || Arrays.asList(prop.services.split(",")).contains(logger);
     }
 
     private static void removeHeaders(Server server) {

@@ -19,23 +19,6 @@ echo 'dtparam=i2c_arm=on' | sudo tee --append /boot/config.txt
 
 # you must reboot in order to use i2c
 
-cat <<EOF >iot.conf
-influx.ip=192.168.
-influx.port=8087
-logstash.ip=192.168.
-logstash.port=9000
-monitor.ip=192.168.
-monitor.port=8000
-services=I2CMaster
-loggers=FluxLogger
-iot.id=kasteel_zolder
-boiler.name=boiler120
-boiler.sensor=Ttop
-#boiler.name=boiler200
-#boiler.sensor=Ttop
-EOF
-sudo mv iot.conf /etc
-
 cd /tmp
 cat <<EOF >iot-upgrade
 #!/bin/bash
@@ -58,8 +41,6 @@ iot-upgrade
 
 # test if this works
 #sudo usermod -a -G tty pi
-
-sudo nano /etc/iot.conf
 
 cat <<EOF >i2c.service
 [Unit]
@@ -114,11 +95,11 @@ sudo systemctl status http
 cat <<EOF >i2c-watchdog
 #!/bin/bash
 if [[ $(redis-cli --raw exists boiler120.state) = 0 ]]; then
-  logstaship=$(grep logstash.ip /etc/iot.conf | cut -d "=" -f2)
-  logstashport=$(grep logstash.port /etc/iot.conf | cut -d "=" -f2)
-  iotid=$(grep iot.id /etc/iot.conf | cut -d "=" -f2)
+#  logstaship=$(grep logstash.ip /etc/iot.conf | cut -d "=" -f2)
+#  logstashport=$(grep logstash.port /etc/iot.conf | cut -d "=" -f2)
+#  iotid=$(grep iot.id /etc/iot.conf | cut -d "=" -f2)
 
-  echo "iot-furnace-${iotid}:WARN: Restarting i2c by watchdog" > /dev/udp/${logstaship}/${logstashport}
+  echo "iot-furnace-${iotid}:WARN: Restarting i2c by watchdog" > /dev/udp/192.168.178.101/9000
 
   sudo systemctl stop i2c
   wait 10s
@@ -130,7 +111,5 @@ EOF
 
 chmod +x i2c-watchdog
 sudo mv i2c-watchdog /usr/local/bin
-
-exit 0
 
 exit 0

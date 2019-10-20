@@ -21,9 +21,9 @@ public class FurnaceMonitor {
 
     public FurnaceMonitor() {
         Properties properties = new Properties();
-        monitorIp = properties.prop.getProperty("monitor.ip");
-        monitorPort = Integer.parseInt(properties.prop.getProperty("monitor.port"));
-        iotId = properties.prop.getProperty("iot.id");
+        monitorIp = properties.monitorIp;
+        monitorPort = properties.monitorPort;
+        iotId = properties.deviceName;
     }
 
     public void run() {

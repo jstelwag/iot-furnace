@@ -16,12 +16,12 @@ public class LogstashLogger {
     final int port;
 
     private LogstashLogger() {
-        final Properties properties = new Properties();
-        port = Integer.parseInt(properties.prop.getProperty("logstash.port"));
-        iotId = properties.prop.getProperty("iot.id");
+        final Properties prop = new Properties();
+        port = prop.logstashPort;
+        iotId = prop.deviceName;
 
         try {
-            host = InetAddress.getByName(properties.prop.getProperty("logstash.ip"));
+            host = InetAddress.getByName(prop.logstashIp);
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }

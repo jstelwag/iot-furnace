@@ -20,14 +20,10 @@ public class FluxLogger implements Closeable {
 
     public FluxLogger() throws SocketException, UnknownHostException {
         final Properties properties = new Properties();
-        if (StringUtils.isEmpty(properties.prop.getProperty("influx.ip"))) {
-            LogstashLogger.INSTANCE.fatal("influx.ip setting missing from properties");
-            throw new UnknownHostException("Please set up influx.ip and port in iot.conf");
-        }
-        iotId = properties.prop.getProperty("iot.id");
+        iotId = properties.deviceName;
         try {
-            host = InetAddress.getByName(properties.prop.getProperty("influx.ip"));
-            port = Integer.parseInt(properties.prop.getProperty("influx.port"));
+            host = InetAddress.getByName(properties.influxIp);
+            port = properties.influxPort;
         } catch (UnknownHostException e) {
             LogstashLogger.INSTANCE.error("Trying to set up InfluxDB client for unknown host " + e.toString());
             throw e;
