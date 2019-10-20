@@ -42,9 +42,8 @@ public class Main {
                 case "http":
                     startHttp(8080);
                     break;
-                case "ID":
-                    Properties prop = new Properties();
-                    System.out.println("MAC: " + prop.mac + " - " + prop.deviceName);
+                case "prop":
+                    System.out.println(prop(args[1]));
                     break;
                 default:
                     LogstashLogger.INSTANCE.error("Unknown parameter for Main " + args[0]);
@@ -53,6 +52,21 @@ public class Main {
         } catch (Exception e) {
             LogstashLogger.INSTANCE.error(args[0] + " has finished with unhandled exception " + e.toString());
         }
+    }
+
+    private static String prop(String name) {
+        Properties prop = new Properties();
+        switch(name) {
+            case "name":
+                return prop.deviceName;
+            case "logstashIp":
+                return prop.logstashIp;
+            case "logstashPort":
+                return Integer.toString(prop.logstashPort);
+            case "mac":
+                return prop.mac;
+        }
+        return "unknown";
     }
 
     private static void startHttp(int port) {

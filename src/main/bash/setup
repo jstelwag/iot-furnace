@@ -36,8 +36,8 @@ EOF
 sudo mv iot-furnace /usr/local/bin
 sudo chmod +x /usr/local/bin/iot-furnace
 
-cd ~
-iot-upgrade
+cd /home/pi/iot-furnace
+mvn clean install
 
 # test if this works
 #sudo usermod -a -G tty pi

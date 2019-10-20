@@ -1,9 +1,9 @@
 #!/bin/bash
 cd /home/pi/iot-furnace
 
-logstaship=$(grep logstash.ip /etc/iot.conf | cut -d "=" -f2)
-logstashport=$(grep logstash.port /etc/iot.conf | cut -d "=" -f2)
-iotid=$(grep iot.id /etc/iot.conf | cut -d "=" -f2)
+logstaship=$(/usr/local/bin/iot-furnace prop logstashIp)
+logstashport=$(/usr/local/bin/iot-furnace prop logstashPort)
+iotid=$(/usr/local/bin/iot-furnace prop deviceName)
 
 gitstatus=$(git pull)
 if [ "${gitstatus}" = "Already up-to-date." ]; then

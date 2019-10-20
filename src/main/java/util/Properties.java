@@ -96,7 +96,7 @@ public class Properties {
             }
             if (prop.getProperty("loggers") != null) {
                 loggers = prop.getProperty("loggers");
-            } 
+            }
         }
     }
 }
