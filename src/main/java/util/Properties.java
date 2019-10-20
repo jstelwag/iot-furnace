@@ -60,8 +60,12 @@ public class Properties {
         this.cpuId = cpuId;
         switch (cpuId) {
             case "000000006f0cfbce":
-                System.out.println("hi");
-                deviceName = "kasteel_kelder";
+                deviceName = "koetshuis_kelder";
+                services = "I2CMaster";
+                loggers = "FluxLogger";
+                break;
+            case "00000000748d357c":
+                deviceName = "kasteel_hal";
                 services = "I2CMaster";
                 loggers = "FluxLogger";
                 break;
