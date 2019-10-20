@@ -2,7 +2,8 @@ package util;
 
 import org.apache.commons.io.IOUtils;
 
-import java.net.NetworkInterface;
+import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
@@ -11,8 +12,8 @@ import java.io.InputStream;
 public class Properties {
 
     public static final int redisExpireSeconds = 5*60;
-    public java.util.Properties prop;
-    public String mac;
+    public java.util.Properties prop = null;
+    public String cpuId;
     public String deviceName;
 
     public String influxIp = "192.168.78.14";
@@ -32,19 +33,22 @@ public class Properties {
 
     public Properties()  {
         InputStream inputStream = null;
-        prop = new java.util.Properties();
         try {
-            inputStream = new FileInputStream("/etc/iot.conf");
-            prop.load(inputStream);
-
-            byte[] macByte = NetworkInterface.getByName("eth0").getHardwareAddress();
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < macByte.length; i++) {
-                sb.append(String.format("%02X%s", macByte[i], (i < macByte.length - 1) ? "-" : ""));
-             }
-             if (sb.length() > 0) {
-                 setProperties(sb.toString());
-             }
+            File confFile = new File("/etc/iot.conf");
+            if (confFile.exists()) {
+                inputStream = new FileInputStream(confFile);
+                prop = new java.util.Properties();
+                prop.load(inputStream);
+            }
+            String line;
+            BufferedReader br = new BufferedReader(new FileReader("/proc/cpuinfo"));
+            while ((line = br.readLine()) != null) {
+                if (line.startsWith("Serial")) {
+                    cpuId = line.replaceAll("Serial\\s+:", "").trim();
+                    setProperties(cpuId);
+                    break;
+                }
+            }
         } catch (IOException e) {
             prop = null;
         } finally {
@@ -52,10 +56,11 @@ public class Properties {
         }
     }
 
-    public void setProperties(String mac) {
-        this.mac = mac;
-        switch (mac) {
-            case "B8-27-EB-0C-FB-CE":
+    public void setProperties(String cpuId) {
+        this.cpuId = cpuId;
+        switch (cpuId) {
+            case "000000006f0cfbce":
+                System.out.println("hi");
                 deviceName = "kasteel_kelder";
                 services = "I2CMaster";
                 loggers = "FluxLogger";

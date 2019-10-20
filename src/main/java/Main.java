@@ -57,14 +57,14 @@ public class Main {
     private static String prop(String name) {
         Properties prop = new Properties();
         switch(name) {
-            case "name":
+            case "deviceName":
                 return prop.deviceName;
             case "logstashIp":
                 return prop.logstashIp;
             case "logstashPort":
                 return Integer.toString(prop.logstashPort);
-            case "mac":
-                return prop.mac;
+            case "cpuId":
+                return prop.cpuId;
         }
         return "unknown";
     }
