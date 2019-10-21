@@ -8,6 +8,8 @@ import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import redis.clients.jedis.Jedis;
+
 
 public class Properties {
 
@@ -49,6 +51,7 @@ public class Properties {
                     break;
                 }
             }
+            IOUtils.closeQuietly(br);
         } catch (IOException e) {
             prop = null;
         } finally {
@@ -66,6 +69,11 @@ public class Properties {
                 break;
             case "00000000748d357c":
                 deviceName = "kasteel_hal";
+                services = "I2CMaster";
+                loggers = "FluxLogger";
+                break;
+            case "0000000000707764":
+                deviceName = "koetshuis_trap";
                 services = "I2CMaster";
                 loggers = "FluxLogger";
                 break;
@@ -106,6 +114,13 @@ public class Properties {
             if (prop.getProperty("loggers") != null) {
                 loggers = prop.getProperty("loggers");
             }
+        }
+
+        try (Jedis jedis = new Jedis("localhost")) {
+            jedis.set("deviceName", deviceName);
+            jedis.set("services", services);
+            jedis.set("loggers", loggers);
+        } catch (Exception e) {
         }
     }
 }

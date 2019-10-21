@@ -135,10 +135,11 @@ public class Master {
             } catch (IOException ignored) {
             }
         }
-        Jedis jedis = new Jedis("localhost");
-        jedis.set("valveCount", Integer.toString(valve.devices.size()));
-        jedis.set("furnaceCount", Integer.toString(furnace.devices.size()));
-        jedis.close();
+        try (Jedis jedis = new Jedis("localhost")) {
+            jedis.set("valveGroupCount", Integer.toString(valve.devices.size()));
+            jedis.set("furnaceCount", Integer.toString(furnace.devices.size()));
+        } catch (Exception e) {
+        }
         LogstashLogger.INSTANCE.info("Scanned " + (valve.devices.size() + furnace.devices.size()) + " devices");
     }
 }

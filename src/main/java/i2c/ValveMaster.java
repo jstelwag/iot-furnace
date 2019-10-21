@@ -9,6 +9,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import redis.clients.jedis.Jedis;
+
 /**
  * Handles requests and responses from a connected Arduino valvegroup (I2CValveBridge)
  */
@@ -16,6 +18,8 @@ public class ValveMaster {
 
     private final String monitorIp;
     private final int monitorPort;
+
+    private final int TTL = 60;
 
     public ValveMaster(String monitorIp, int monitorPort) {
         this.monitorIp = monitorIp;
@@ -40,10 +44,14 @@ public class ValveMaster {
         }
         if (slaveResponse.contains("]")) {
             //Send response from valvegroup back to monitor for logging
+            String response = deviceId + ":" + slaveResponse.substring(0, slaveResponse.indexOf("]") + 1);
+            try (Jedis jedis = new Jedis("localhost")) {
+                jedis.setex("lastValveResponse", TTL, response);
+            } catch (Exception e) {
+            }
             try {
                 Request.Post("http://" + monitorIp + ":" + monitorPort + "/valvegroup/")
-                        .bodyString(deviceId + ":" + slaveResponse.substring(0, slaveResponse.indexOf("]") + 1)
-                                , ContentType.DEFAULT_TEXT).execute().returnContent().asString();
+                        .bodyString(response, ContentType.DEFAULT_TEXT).execute().returnContent().asString();
             } catch (IOException e) {
                 LogstashLogger.INSTANCE.error("Failed to post valvegroup status for " + deviceId);
             }
