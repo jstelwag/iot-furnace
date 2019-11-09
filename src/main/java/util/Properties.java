@@ -77,8 +77,15 @@ public class Properties {
                 services = "I2CMaster";
                 loggers = "FluxLogger";
                 break;
+            case "000000009dbfb2a1":
+                deviceName = "kasteel_zolder";
+                services = "I2CMaster";
+                loggers = "FluxLogger";
+                boilerName = "boiler120";
+                boilerSensor = "Ttop";
+                break;
             case "00000000fee88d9a":
-                deviceName = "sensorRoom2";
+                deviceName = "sensor_room_2";
                 services = "DallasTemperature";
                 loggers = "FluxLogger";
                 break;

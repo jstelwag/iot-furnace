@@ -6,6 +6,8 @@ HOME=/home/pi
 #*/5 * * * * iot-furnace I2CMaster >> $HOME/furnace.log 2>&1
 * * * * * iot-furnace FluxLogger >> $HOME/furnace.log 2>&1
 * * * * * (sleep 30 && iot-furnace FluxLogger >> $HOME/furnace.log 2>&1)
+* * * * * iot-furnace DallasTemperature >> $HOME/furnace.log 2>&1
+* * * * * (sleep 30 && iot-furnace DallasTemperature >> $HOME/furnace.log 2>&1)
 */5 * * * * iot-furnace FurnaceMonitor >> $HOME/furnace.log 2>&1
 #*/5 * * * * i2c-watchdog >> $HOME/furnace.log 2>&1
 
