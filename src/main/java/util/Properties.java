@@ -64,22 +64,22 @@ public class Properties {
         switch (cpuId) {
             case "000000006f0cfbce":
                 deviceName = "koetshuis_kelder";
-                services = "I2CMaster";
+                services = "I2CMaster, http";
                 loggers = "FluxLogger";
                 break;
             case "00000000748d357c":
                 deviceName = "kasteel_hal";
-                services = "I2CMaster";
+                services = "I2CMaster, http";
                 loggers = "FluxLogger";
                 break;
             case "00000000367a29e3":
                 deviceName = "koetshuis_trap";
-                services = "I2CMaster";
+                services = "I2CMaster, http";
                 loggers = "FluxLogger";
                 break;
             case "000000009dbfb2a1":
                 deviceName = "kasteel_zolder";
-                services = "I2CMaster";
+                services = "I2CMaster, http";
                 loggers = "FluxLogger";
                 boilerName = "boiler120";
                 boilerSensor = "Ttop";

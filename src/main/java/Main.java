@@ -42,10 +42,14 @@ public class Main {
                     }
                     break;
                 case "I2CMaster":
-                    new Master().run();
+                    if (hasService(args[0])) {
+                        new Master().run();
+                    }
                     break;
                 case "http":
-                    startHttp(8080);
+                    if (hasService(args[0])) {
+                        startHttp(8080);
+                    }
                     break;
                 case "prop":
                     System.out.println(prop(args[1]));
