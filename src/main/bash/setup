@@ -95,9 +95,9 @@ sudo systemctl status http
 cat <<EOF >i2c-watchdog
 #!/bin/bash
 if [[ $(redis-cli --raw exists boiler120.state) = 0 ]]; then
-#  logstaship=$(grep logstash.ip /etc/iot.conf | cut -d "=" -f2)
-#  logstashport=$(grep logstash.port /etc/iot.conf | cut -d "=" -f2)
-#  iotid=$(grep iot.id /etc/iot.conf | cut -d "=" -f2)
+#  logstaship=$(iot-furnace prop logstashIp)
+#  logstashport=$(iot-furnace prop logstashPort)
+#  iotid=$(iot-furnace prop deviceName)
 
   echo "iot-furnace-${iotid}:WARN: Restarting i2c by watchdog" > /dev/udp/192.168.178.101/9000
 
@@ -111,5 +111,16 @@ EOF
 
 chmod +x i2c-watchdog
 sudo mv i2c-watchdog /usr/local/bin
+
+sudo tee -a /etc/wpa_supplicant/wpa_supplicant.conf << EOF
+network={ ssid="Kasteel keuken"
+        #psk="bnbkasteel"
+        psk=3beceea36990848d10b1c3cb5b14805cf8516b93ec679bd699ac0ca58accd677
+}
+network={ ssid="Kasteel hal"
+        #psk="bnbkasteel"
+        psk=7e532d31523df37698c9db4ce01a5c5304c2126304237ab3b8c0ea6ffe3c4516
+}
+EOF
 
 exit 0

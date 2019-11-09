@@ -77,6 +77,11 @@ public class Properties {
                 services = "I2CMaster";
                 loggers = "FluxLogger";
                 break;
+            case "00000000fee88d9a":
+                deviceName = "sensorRoom2";
+                services = "DallasTemperature";
+                loggers = "FluxLogger";
+                break;
         }
 
         // Override from properties file
