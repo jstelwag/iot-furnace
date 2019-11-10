@@ -36,11 +36,6 @@ public class Main {
                         new FurnaceMonitor().run();
                     }
                     break;
-                case "DallasTemperature":
-                    if (hasService(args[0])) {
-                        new DallasTemperature().run();
-                    }
-                    break;
                 case "I2CMaster":
                     if (hasService(args[0])) {
                         new Master().run();
