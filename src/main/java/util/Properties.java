@@ -72,7 +72,7 @@ public class Properties {
                 services = "I2CMaster, http";
                 loggers = "FluxLogger";
                 break;
-            case "00000000367a29e3":
+            case "0000000069cec62c":
                 deviceName = "koetshuis_trap";
                 services = "I2CMaster, http";
                 loggers = "FluxLogger";
