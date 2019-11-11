@@ -1,5 +1,7 @@
 import handlers.RedisHandler;
+//import com.pi4j.io.i2c.I2CFactory;
 import i2c.Master;
+import java.io.IOException;
 import monitor.FurnaceMonitor;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.server.ConnectionFactory;
@@ -49,7 +51,15 @@ public class Main {
                 case "prop":
                     System.out.println(prop(args[1]));
                     break;
-                default:
+ /*               case "i2c":
+                    try {
+                        int[] ids = I2CFactory.getBusIds();
+                        System.out.println("Found follow I2C busses: " + Arrays.toString(ids));
+                        } catch (IOException exception) {
+                            System.out.println("I/O error during fetch of I2C busses occurred");
+                        }
+                        break;
+*/                default:
                     LogstashLogger.INSTANCE.error("Unknown parameter for Main " + args[0]);
                     break;
             }

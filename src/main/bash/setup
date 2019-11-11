@@ -19,6 +19,9 @@ echo 'dtparam=i2c_arm=on' | sudo tee --append /boot/config.txt
 
 # you must reboot in order to use i2c
 
+sudo apt-get -y install wiringpi
+curl -sSL https://pi4j.com/install | sudo bash
+
 cd /tmp
 cat <<EOF >iot-upgrade
 #!/bin/bash
