@@ -3,14 +3,13 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 HOME=/home/pi
 
 */5 * * * * iot-furnace FurnaceSlave >> $HOME/furnace.log 2>&1
-#*/5 * * * * iot-furnace I2CMaster >> $HOME/furnace.log 2>&1
 * * * * * iot-furnace FluxLogger >> $HOME/furnace.log 2>&1
 * * * * * (sleep 30 && iot-furnace FluxLogger >> $HOME/furnace.log 2>&1)
 * * * * * iot-furnace DallasTemperature >> $HOME/furnace.log 2>&1
 * * * * * (sleep 30 && iot-furnace DallasTemperature >> $HOME/furnace.log 2>&1)
 */5 * * * * iot-furnace FurnaceMonitor >> $HOME/furnace.log 2>&1
-#*/5 * * * * i2c-watchdog >> $HOME/furnace.log 2>&1
 
+0 2 * * * echo rpi_$(/usr/local/bin/iot-furnace prop deviceName) | sudo tee /etc/hostname >> /dev/null 2>&1
 0 3 * * * (iot-upgrade && sudo reboot) > $HOME/upgrade.log 2>&1
 
 # needs newline at the end
