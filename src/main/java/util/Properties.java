@@ -88,6 +88,10 @@ public class Properties {
                 deviceName = "sensor_room_2";
                 services = "DallasTemperature";
                 break;
+            case "0000000056718ccc":
+                deviceName = "sensor_apartment_I";
+                services = "DallasTemperature";
+                break;
         }
 
         // Override from properties file
