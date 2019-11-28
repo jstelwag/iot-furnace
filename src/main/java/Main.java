@@ -1,7 +1,5 @@
 import handlers.RedisHandler;
-//import com.pi4j.io.i2c.I2CFactory;
 import i2c.Master;
-import java.io.IOException;
 import monitor.FurnaceMonitor;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.server.ConnectionFactory;
@@ -36,6 +34,11 @@ public class Main {
                 case "FurnaceMonitor":
                     if (hasService(args[0])) {
                         new FurnaceMonitor().run();
+                    }
+                    break;
+                case "DallasTemperature":
+                    if (hasService(args[0])) {
+                        new DallasTemperature().run();
                     }
                     break;
                 case "I2CMaster":

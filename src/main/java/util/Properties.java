@@ -87,7 +87,6 @@ public class Properties {
             case "00000000fee88d9a":
                 deviceName = "sensor_room_2";
                 services = "DallasTemperature";
-                loggers = "FluxLogger";
                 break;
         }
 

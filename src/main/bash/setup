@@ -126,4 +126,14 @@ network={ ssid="Kasteel hal"
 }
 EOF
 
+sudo tee -a sudo nano /boot/config.txt << EOF
+gpu_mem=16
+dtoverlay=w1-gpio
+EOF
+
+# run this after reboot
+sudo modprobe w1–gpio
+sudo modprobe w1-therm
+# somehow this soes not work. use raspi-config to enable 1-wire
+
 exit 0
