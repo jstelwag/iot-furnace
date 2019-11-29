@@ -6,8 +6,14 @@
 sudo apt-get update
 sudo apt-get -y upgrade
 
-sudo apt-get -y install cron-apt rpi-update redis-server openjdk-8-jdk maven
+sudo apt-get -y install cron-apt rpi-update redis-server openjdk-11-jdk maven
 #sudo rpi-update
+
+#Install from apache, ignore debian maven package (untill they upgrade beyond 3.6.0)
+#cd
+#wget http://mirror.serverion.com/apache/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz
+#tar xzvf apache-maven-3.6.3-bin.tar.gz
+#echo 'PATH="$PATH:/home/pi/apache-maven-3.6.3/bin"' >> .profile
 
 # allow debugging via pu to I2CMaster
 sudo apt-get -y install i2c-tools
