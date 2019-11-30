@@ -62,17 +62,14 @@ public class Properties {
             case "000000006f0cfbce":
                 deviceName = "koetshuis_kelder";
                 services = "I2CMaster, http";
-                loggers = "FluxLogger";
                 break;
             case "00000000748d357c":
                 deviceName = "kasteel_hal";
                 services = "I2CMaster, http";
-                loggers = "FluxLogger";
                 break;
             case "0000000069cec62c":
                 deviceName = "koetshuis_trap";
                 services = "I2CMaster, http";
-                loggers = "FluxLogger";
                 break;
             case "000000009dbfb2a1":
                 deviceName = "kasteel_zolder";
