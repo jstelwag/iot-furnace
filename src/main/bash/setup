@@ -5,9 +5,11 @@
 
 sudo apt-get update
 sudo apt-get -y upgrade
+#openjdk-8 is needed for Pi4J, once Pi4J v2 is released this can be upgraded
+#therefore don't use Raspbian Buster, it will default to JDK 11
 
-sudo apt-get -y install cron-apt rpi-update redis-server openjdk-11-jdk maven
-#sudo rpi-update
+sudo apt-get -y install cron-apt rpi-update redis-server openjdk-8-jdk maven
+#sudo rpi-update (perhaps needed for Wifi)
 
 #Install from apache, ignore debian maven package (untill they upgrade beyond 3.6.0)
 #cd
