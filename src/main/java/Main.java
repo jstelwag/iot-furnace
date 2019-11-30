@@ -12,8 +12,6 @@ import util.FluxLogger;
 import util.LogstashLogger;
 import util.Properties;
 
-import java.util.Arrays;
-
 /**
  * Created by Jaap on 25-7-2016.
  */
@@ -128,12 +126,12 @@ public class Main {
     public static boolean hasService(String service) {
         final Properties prop = new Properties();
             return StringUtils.isEmpty(prop.services)
-                    || Arrays.asList(prop.services.split(",")).contains(service);
+                    || prop.loggers.contains(service);
     }
     public static boolean hasLogger(String logger) {
         final Properties prop = new Properties();
         return StringUtils.isEmpty(prop.loggers)
-                || Arrays.asList(prop.services.split(",")).contains(logger);
+                || prop.loggers.contains(logger);
     }
 
     private static void removeHeaders(Server server) {
