@@ -125,13 +125,11 @@ public class Main {
 
     public static boolean hasService(String service) {
         final Properties prop = new Properties();
-            return StringUtils.isEmpty(prop.services)
-                    || prop.loggers.contains(service);
+            return prop.services != null && prop.services.contains(service);
     }
     public static boolean hasLogger(String logger) {
         final Properties prop = new Properties();
-        return StringUtils.isEmpty(prop.loggers)
-                || prop.loggers.contains(logger);
+        return prop.loggers != null && prop.loggers.contains(logger);
     }
 
     private static void removeHeaders(Server server) {
