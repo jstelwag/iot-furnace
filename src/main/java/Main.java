@@ -82,13 +82,17 @@ public class Main {
                 return Integer.toString(prop.logstashPort);
             case "cpuId":
                 return prop.cpuId;
+            case "services":
+                return prop.services;
+            case "loggers":
+                return prop.loggers;
+
         }
         return "unknown";
     }
 
     private static void startHttp(int port) {
-        LogstashLogger.INSTANCE.info("Starting http");
-
+        LogstashLogger.INSTANCE.info("Starting http at port " + port);
 
         ContextHandler redisContext = new ContextHandler("/redis");
         redisContext.setHandler(new RedisHandler());

@@ -1,15 +1,8 @@
 package util;
 
-import org.apache.commons.io.IOUtils;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStream;
 import redis.clients.jedis.Jedis;
 
+import java.io.*;
 
 public class Properties {
 
@@ -33,17 +26,23 @@ public class Properties {
     public String services;
     public String loggers;
 
+    private final String PROP_FILE = "/etc/iot.conf";
+    private final String CPU_INFO = "/proc/cpuinfo";
+
     public Properties()  {
-        InputStream inputStream = null;
-        try {
-            File confFile = new File("/etc/iot.conf");
-            if (confFile.exists()) {
-                inputStream = new FileInputStream(confFile);
+        File confFile = new File(PROP_FILE);
+        if (confFile.exists()) {
+            try (InputStream inputStream = new FileInputStream(confFile)) {
                 prop = new java.util.Properties();
                 prop.load(inputStream);
+            } catch (IOException e) {
+                prop = null;
+                //todo logstash
+                System.out.println("Could not open properties file " + PROP_FILE);
             }
+        }
+        try (BufferedReader br = new BufferedReader(new FileReader(CPU_INFO))) {
             String line;
-            BufferedReader br = new BufferedReader(new FileReader("/proc/cpuinfo"));
             while ((line = br.readLine()) != null) {
                 if (line.startsWith("Serial")) {
                     cpuId = line.replaceAll("Serial\\s+:", "").trim();
@@ -51,11 +50,9 @@ public class Properties {
                     break;
                 }
             }
-            IOUtils.closeQuietly(br);
         } catch (IOException e) {
-            prop = null;
-        } finally {
-            IOUtils.closeQuietly(inputStream);
+            //todo logstash
+            System.out.println("Could not retrieve cpu serial number from " + CPU_INFO);
         }
     }
 
@@ -136,6 +133,7 @@ public class Properties {
             jedis.set("services", services);
             jedis.set("loggers", loggers);
         } catch (Exception e) {
+            //todo logstash
         }
     }
 }

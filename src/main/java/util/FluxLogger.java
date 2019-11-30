@@ -1,6 +1,5 @@
 package util;
 
-import org.apache.commons.lang3.StringUtils;
 import redis.clients.jedis.Jedis;
 
 import java.io.Closeable;

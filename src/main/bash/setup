@@ -123,12 +123,18 @@ sudo mv i2c-watchdog /usr/local/bin
 
 sudo tee -a /etc/wpa_supplicant/wpa_supplicant.conf << EOF
 network={ ssid="Kasteel keuken"
-        #psk="bnbkasteel"
         psk=3beceea36990848d10b1c3cb5b14805cf8516b93ec679bd699ac0ca58accd677
 }
 network={ ssid="Kasteel hal"
-        #psk="bnbkasteel"
         psk=7e532d31523df37698c9db4ce01a5c5304c2126304237ab3b8c0ea6ffe3c4516
+}
+network={
+        ssid="Koetshuis trap"
+        psk=ebdf072ab0e234ffd19a73cf5359a0de46024d0da5f0929fe1a1cd8b36abd9de
+}
+network={
+        ssid="KoetshuisLinks"
+        psk=60e2063172513387caad2863dd4f8a691b277e721ce5ed1f1aa32ce68e98ebf3
 }
 EOF
 
@@ -141,5 +147,7 @@ EOF
 sudo modprobe w1–gpio
 sudo modprobe w1-therm
 # somehow this soes not work. use raspi-config to enable 1-wire
+
+/usr/bin/crontab /home/pi/iot-furnace/src/main/bash/crontab
 
 exit 0
