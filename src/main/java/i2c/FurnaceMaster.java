@@ -18,32 +18,27 @@ import java.util.Map;
  * Handles requests and responses from a connected Arduino valvegroup (I2CValveBridge)
  */
 public class FurnaceMaster {
-
     private final String monitorIp;
     private final int monitorPort;
     private final String boilerName;
     private final String boilerSensor;
-    private final String iotId;
+    private final String deviceName;
 
     public Double auxiliaryTemperature;
     public boolean boilerState = false;
 
-    private Jedis jedis;
-
-    public FurnaceMaster(String monitorIp, int monitorPort, String boiler, String boilerSensor, String iotId) {
-        this.monitorIp = monitorIp;
-        this.monitorPort = monitorPort;
-        this.boilerName = boiler;
-        this.boilerSensor = boilerSensor;
-        this.iotId = iotId;
+    public FurnaceMaster(Properties prop) {
+        this.monitorIp = prop.monitorIp;
+        this.monitorPort = prop.monitorPort;
+        this.boilerName = prop.boilerName;
+        this.boilerSensor = prop.boilerSensor;
+        this.deviceName = prop.deviceName;
     }
 
     protected Map<String, I2CDevice> devices = new HashMap<>();
 
     public boolean parse(String deviceId) {
-        String slaveResponse;
-
-        String monitorResponse;
+        String slaveResponse, monitorResponse;
         String monitorRequest = "http://" + monitorIp + ":" + monitorPort + "/furnace/" + deviceId + "/";
         try {
             monitorResponse = Request.Get(monitorRequest).execute().returnContent().asString();
@@ -58,14 +53,18 @@ public class FurnaceMaster {
         try {
             devices.get(deviceId).write(slaveRequest.getBytes());
             slaveResponse = Master.response(devices.get(deviceId));
-            //LogstashLogger.INSTANCE.message("Request: " + slaveRequest + " / response: " +slaveResponse);
+
             if (StringUtils.countMatches(slaveResponse, ":") > 2) {
                 state2Redis(slaveResponse);
                 send2Flux(slaveResponse);
                 send2Log(slaveResponse);
+                LogstashLogger.INSTANCE.info("Requested furnace slave after monitor directive: " + monitorResponse
+                        + ", slave request: " + slaveRequest + " and slave response: " + slaveResponse);
+            } else {
+                LogstashLogger.INSTANCE.error("Furnace slave response was not expected: " + monitorResponse
+                        + ", slave request: " + slaveRequest + " and slave response: " + slaveResponse);
             }
-            LogstashLogger.INSTANCE.info("Requested furnace slave after monitor directive: " + monitorResponse
-                    + ", slave request: " + slaveRequest + " and slave response: " + slaveResponse);
+
         } catch (IOException e) {
             LogstashLogger.INSTANCE.error("Rescanning bus after communication error for " + deviceId);
             return false;
@@ -92,7 +91,6 @@ public class FurnaceMaster {
                     + auxiliaryTemperature);
             return auxiliaryTemperature < 16.0;
         }
-        jedis.close();
 
         LogstashLogger.INSTANCE.warn("No iot-monitor furnace state available, using month based default");
         return now.get(Calendar.MONTH) < 4 || now.get(Calendar.MONTH) > 9;
@@ -112,7 +110,7 @@ public class FurnaceMaster {
             if (StringUtils.countMatches(slaveResponse, ":") > 1
                     && !TemperatureSensor.isOutlier(slaveResponse.split(":")[2].trim())) {
                 auxiliaryTemperature = Double.parseDouble(slaveResponse.split(":")[2].trim());
-                flux.send("environment.temperature " + iotId + "=" + slaveResponse.split(":")[2].trim());
+                flux.send("environment.temperature " + deviceName + "=" + slaveResponse.split(":")[2].trim());
             }
         } catch (IOException e) {
             LogstashLogger.INSTANCE.error("Failed to send to flux " + e.getMessage());
@@ -161,9 +159,11 @@ public class FurnaceMaster {
     }
     
     void state2Redis(String slaveResponse) {
-        jedis = new Jedis("localhost");
-        boilerState = "1".equals(slaveResponse.split(":")[0].trim());
-        jedis.setex(TemperatureSensor.boiler + ".state", Properties.redisExpireSeconds, slaveResponse.split(":")[0]);
-        jedis.close();
+        try (Jedis jedis = new Jedis("localhost")) {
+            boilerState = "1".equals(slaveResponse.split(":")[0].trim());
+            jedis.setex(TemperatureSensor.boiler + ".state", Properties.redisExpireSeconds, slaveResponse.split(":")[0]);
+        } catch (Exception e) {
+            LogstashLogger.INSTANCE.error("Redis exception " + e.getMessage());
+        }
     }
 }

@@ -1,5 +1,5 @@
 #!/bin/bash
-# respberry pi setup script for iot-solar
+# respberry pi setup script
 # first run sudo apt-get -y install git && git clone https://github.com/jstelwag/iot-furnace
 # then sh iot-furnace/src/main/bash/setup
 
@@ -140,6 +140,7 @@ dtoverlay=w1-gpio
 EOF
 
 # run this after reboot
+# needed for devices with DS18B20 thermometer
 sudo modprobe w1–gpio
 sudo modprobe w1-therm
 # somehow this soes not work. use raspi-config to enable 1-wire

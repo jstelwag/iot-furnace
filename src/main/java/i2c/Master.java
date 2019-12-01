@@ -26,16 +26,9 @@ public class Master {
 
     public Master() throws IOException, I2CFactory.UnsupportedBusNumberException {
         Properties prop = new Properties();
-        String ip = prop.monitorIp;
         lastSuccessTime = new Date().getTime();
-        int port = prop.monitorPort;
-        String boilerName = prop.boilerName;
-        String boilerSensor = prop.boilerSensor;
-        String iotId = prop.deviceName;
-
-        valve = new ValveMaster(ip, port);
-        furnace = new FurnaceMaster(ip, port, boilerName, boilerSensor, iotId);
-
+        valve = new ValveMaster(prop.monitorIp, prop.monitorPort);
+        furnace = new FurnaceMaster(prop);
         try {
             bus = I2CFactory.getInstance(I2CBus.BUS_1);
             LogstashLogger.INSTANCE.info("Started i2c master");
