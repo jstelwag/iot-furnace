@@ -103,7 +103,8 @@ public class FurnaceMaster {
                 flux.send("boiler,name=" + TemperatureSensor.boiler + ",position=" + TemperatureSensor.position + " temperature="
                         + slaveResponse.split(":")[1].trim());
             }
-            if (StringUtils.countMatches(slaveResponse, ":") > 1
+            //todo, make this a property
+            if (StringUtils.countMatches(slaveResponse, ":") >= 2
                     && !TemperatureSensor.isOutlier(slaveResponse.split(":")[2].trim())) {
                 auxiliaryTemperature = Double.parseDouble(slaveResponse.split(":")[2].trim());
                 flux.send("environment.temperature " + deviceName + "=" + slaveResponse.split(":")[2].trim());
@@ -114,43 +115,48 @@ public class FurnaceMaster {
     }
 
     void send2Log(String slaveResponse) {
-        if (slaveResponse.split(":").length > 2) {
-            int code = Integer.parseInt(slaveResponse.split(":")[3].trim());
-            switch (code) {
-                case 0:
-                    // do nothing, no log to mention
-                    break;
-                case 1:
-                    LogstashLogger.INSTANCE.info("Starting (furnace controller)");
-                    break;
-                case 2:
-                    LogstashLogger.INSTANCE.info("Furnace switching off (furnace controller)");
-                    break;
-                case 3:
-                    LogstashLogger.INSTANCE.info("Opening boiler valve (furnace controller)");
-                    break;
-                case 4:
-                    LogstashLogger.INSTANCE.info("Turning off boiler (furnace controller)");
-                    break;
-                case 20:
-                    LogstashLogger.INSTANCE.warn("Unconnected, using aux temp (furnace controller)");
-                    break;
-                case 21:
-                    LogstashLogger.INSTANCE.warn("Unconnected, simply turned on (furnace controller)");
-                    break;
-                case 22:
-                    LogstashLogger.INSTANCE.warn("Unexpected master command (furnace controller)");
-                    break;
-                case 23:
-                    LogstashLogger.INSTANCE.warn("Temperature read failure (furnace controller)");
-                    break;
-                case 40:
-                    LogstashLogger.INSTANCE.error("Sensor init: incomplete sensor count (furnace controller)");
-                    break;
-                default:
-                    LogstashLogger.INSTANCE.error("Unknown logCode: " + code + " from furnace controller");
-                    break;
+        try {
+            if (StringUtils.countMatches(slaveResponse, ":") > 2) {
+                int code = Integer.parseInt(slaveResponse.split(":")[3].trim());
+                switch (code) {
+                    case 0:
+                        // do nothing, no log to mention
+                        break;
+                    case 1:
+                        LogstashLogger.INSTANCE.info("Starting (furnace controller)");
+                        break;
+                    case 2:
+                        LogstashLogger.INSTANCE.info("Furnace switching off (furnace controller)");
+                        break;
+                    case 3:
+                        LogstashLogger.INSTANCE.info("Opening boiler valve (furnace controller)");
+                        break;
+                    case 4:
+                        LogstashLogger.INSTANCE.info("Turning off boiler (furnace controller)");
+                        break;
+                    case 20:
+                        LogstashLogger.INSTANCE.warn("Unconnected, using aux temp (furnace controller)");
+                        break;
+                    case 21:
+                        LogstashLogger.INSTANCE.warn("Unconnected, simply turned on (furnace controller)");
+                        break;
+                    case 22:
+                        LogstashLogger.INSTANCE.warn("Unexpected master command (furnace controller)");
+                        break;
+                    case 23:
+                        LogstashLogger.INSTANCE.warn("Temperature read failure (furnace controller)");
+                        break;
+                    case 40:
+                        LogstashLogger.INSTANCE.error("Sensor init: incomplete sensor count (furnace controller)");
+                        break;
+                    default:
+                        LogstashLogger.INSTANCE.error("Unknown logCode: " + code + " from furnace controller");
+                        break;
+                }
             }
+        } catch (Exception e) {
+            LogstashLogger.INSTANCE.error("Could not log the code message from this response " + slaveResponse
+                    + ", " + e.getMessage());
         }
     }
     
