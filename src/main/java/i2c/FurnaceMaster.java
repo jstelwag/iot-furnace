@@ -20,8 +20,6 @@ import java.util.Map;
 public class FurnaceMaster {
     private final String monitorIp;
     private final int monitorPort;
-    private final String boilerName;
-    private final String boilerSensor;
     private final String deviceName;
 
     public Double auxiliaryTemperature;
@@ -30,8 +28,6 @@ public class FurnaceMaster {
     public FurnaceMaster(Properties prop) {
         this.monitorIp = prop.monitorIp;
         this.monitorPort = prop.monitorPort;
-        this.boilerName = prop.boilerName;
-        this.boilerSensor = prop.boilerSensor;
         this.deviceName = prop.deviceName;
     }
 
@@ -102,9 +98,9 @@ public class FurnaceMaster {
 
     void send2Flux(String slaveResponse) {
         try (FluxLogger flux = new FluxLogger()) {
-            flux.send("boiler,name=" + boilerName + " state=" + slaveResponse.split(":")[0].trim());
+            flux.send("boiler,name=" + TemperatureSensor.boiler + " state=" + slaveResponse.split(":")[0].trim());
             if (!TemperatureSensor.isOutlier(slaveResponse.split(":")[1].trim())) {
-                flux.send("boiler,name=" + boilerName + ",position=" + boilerSensor + " temperature="
+                flux.send("boiler,name=" + TemperatureSensor.boiler + ",position=" + TemperatureSensor.position + " temperature="
                         + slaveResponse.split(":")[1].trim());
             }
             if (StringUtils.countMatches(slaveResponse, ":") > 1
@@ -162,6 +158,7 @@ public class FurnaceMaster {
         try (Jedis jedis = new Jedis("localhost")) {
             boilerState = "1".equals(slaveResponse.split(":")[0].trim());
             jedis.setex(TemperatureSensor.boiler + ".state", Properties.redisExpireSeconds, slaveResponse.split(":")[0]);
+            jedis.setex(TemperatureSensor.redisKey, Properties.redisExpireSeconds, slaveResponse.split(":")[1]);
         } catch (Exception e) {
             LogstashLogger.INSTANCE.error("Redis exception " + e.getMessage());
         }

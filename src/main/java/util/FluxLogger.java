@@ -46,15 +46,12 @@ public class FluxLogger implements Closeable {
 
     @Deprecated
     private void logTemperatures() {
-        String sensorLocation = TemperatureSensor.boiler;
-        String sensorPosition = TemperatureSensor.position;
-        String key = sensorLocation + '.' + sensorPosition;
-        if (jedis.exists(key)) {
-            String line = "boiler,name=" + sensorLocation + ",position=" + sensorPosition
-                        + " temperature=" + jedis.get(key);
+        if (jedis.exists(TemperatureSensor.redisKey)) {
+            String line = "boiler,name=" + TemperatureSensor.boiler + ",position=" + TemperatureSensor.position
+                        + " temperature=" + jedis.get(TemperatureSensor.redisKey);
             send(line);
         } else {
-            LogstashLogger.INSTANCE.warn("No temperature for " + key);
+            LogstashLogger.INSTANCE.warn("No temperature for " + TemperatureSensor.redisKey);
         }
 
         if (jedis.exists("auxiliary.temperature")) {
