@@ -74,7 +74,6 @@ public class Properties {
             case "000000009dbfb2a1":
                 deviceName = "kasteel_zolder";
                 services = "I2CMaster, http";
-                loggers = "FluxLogger";
                 boilerName = "boiler120";
                 boilerSensor = "Ttop";
                 break;

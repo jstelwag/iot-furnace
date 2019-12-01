@@ -50,7 +50,7 @@ public class FurnaceMaster {
             devices.get(deviceId).write(slaveRequest.getBytes());
             slaveResponse = Master.response(devices.get(deviceId));
 
-            if (StringUtils.countMatches(slaveResponse, ":") > 2) {
+            if (StringUtils.countMatches(slaveResponse, ":") >= 2) {
                 state2Redis(slaveResponse);
                 send2Flux(slaveResponse);
                 send2Log(slaveResponse);
