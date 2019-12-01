@@ -10,16 +10,14 @@ import java.net.*;
  * Created by Jaap on 25-7-2016.
  */
 public class FluxLogger implements Closeable {
-
     private final InetAddress host;
     private final int port;
-    private Jedis jedis;
     private final DatagramSocket socket;
-    private final String iotId;
+    private final String deviceName;
 
     public FluxLogger() throws SocketException, UnknownHostException {
         final Properties properties = new Properties();
-        iotId = properties.deviceName;
+        deviceName = properties.deviceName;
         try {
             host = InetAddress.getByName(properties.influxIp);
             port = properties.influxPort;
@@ -37,34 +35,30 @@ public class FluxLogger implements Closeable {
     }
 
     public FluxLogger log() {
-        jedis = new Jedis("localhost");
-        logState();
-        logTemperatures();
-        jedis.close();
+        try (Jedis jedis = new Jedis("localhost")){
+            logState(jedis);
+            logTemperatures(jedis);
+        }
         return this;
     }
 
-    @Deprecated
-    private void logTemperatures() {
-        if (jedis.exists(TemperatureSensor.redisKey)) {
+    private void logTemperatures(Jedis jedis) {
+        if (jedis.exists(TemperatureSensor.tempKey)) {
             String line = "boiler,name=" + TemperatureSensor.boiler + ",position=" + TemperatureSensor.position
-                        + " temperature=" + jedis.get(TemperatureSensor.redisKey);
+                        + " temperature=" + jedis.get(TemperatureSensor.tempKey);
             send(line);
         } else {
-            LogstashLogger.INSTANCE.warn("No temperature for " + TemperatureSensor.redisKey);
+            LogstashLogger.INSTANCE.warn("No temperature for " + TemperatureSensor.tempKey);
         }
 
         if (jedis.exists("auxiliary.temperature")) {
-            send("environment.temperature " + iotId + "=" + jedis.get("auxiliary.temperature"));
+            send("environment.temperature " + deviceName + "=" + jedis.get("auxiliary.temperature"));
         }
     }
 
-    @Deprecated
-    private void logState() {
-        if (jedis.exists("boiler200.state")) {
-            send("boiler,name=boiler200 state=" + jedis.get("boiler200.state"));
-        } else if (jedis.exists("boiler120.state")) {
-            send("boiler,name=boiler120 state=" + jedis.get("boiler120.state"));
+    private void logState(Jedis jedis) {
+        if (jedis.exists(TemperatureSensor.stateKey)) {
+            send("boiler,name=" + TemperatureSensor.boiler + " state=" + jedis.get(TemperatureSensor.stateKey));
         } else {
             LogstashLogger.INSTANCE.error("There is no state in Redis to log boiler state");
         }

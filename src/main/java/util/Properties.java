@@ -22,6 +22,7 @@ public class Properties {
 
     public String boilerName;
     public String boilerSensor;
+    public boolean hasAuxilaryTemperature = true;
 
     public String services;
     public String loggers;
@@ -77,6 +78,7 @@ public class Properties {
                 loggers = "FluxLogger";
                 boilerName = "boiler120";
                 boilerSensor = "Ttop";
+                hasAuxilaryTemperature = true;
                 break;
             case "00000000fee88d9a":
                 deviceName = "sensor_room_2";

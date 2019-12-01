@@ -24,10 +24,17 @@ public class FurnaceMaster {
     public Double auxiliaryTemperature;
     public boolean boilerState = false;
 
+    private int minimumSlaveResponse = 1;
+    private boolean hasAuxiliryTemperature = false;
+
     public FurnaceMaster(Properties prop) {
         this.monitorIp = prop.monitorIp;
         this.monitorPort = prop.monitorPort;
         this.deviceName = prop.deviceName;
+        if (prop.hasAuxilaryTemperature) {
+            minimumSlaveResponse = 2;
+            hasAuxiliryTemperature = true;
+        }
     }
 
     protected Map<String, I2CDevice> devices = new HashMap<>();
@@ -49,9 +56,12 @@ public class FurnaceMaster {
             devices.get(deviceId).write(slaveRequest.getBytes());
             slaveResponse = Master.response(devices.get(deviceId));
 
-            if (StringUtils.countMatches(slaveResponse, ":") >= 2) {
+            int matchCount = StringUtils.countMatches(slaveResponse,":");
+            if (matchCount >= minimumSlaveResponse) {
                 state2Redis(slaveResponse);
-                send2Log(slaveResponse);
+                if (matchCount == minimumSlaveResponse + 1) {
+                    send2Log(slaveResponse);
+                }
                 LogstashLogger.INSTANCE.info("Requested furnace slave after monitor directive: " + monitorResponse
                         + ", slave request: " + slaveRequest + " and slave response: " + slaveResponse);
             } else {
@@ -96,43 +106,41 @@ public class FurnaceMaster {
 
     void send2Log(String slaveResponse) {
         try {
-            if (StringUtils.countMatches(slaveResponse, ":") > 2) {
-                int code = Integer.parseInt(slaveResponse.split(":")[3].trim());
-                switch (code) {
-                    case 0:
-                        // do nothing, no log to mention
-                        break;
-                    case 1:
-                        LogstashLogger.INSTANCE.info("Starting (furnace controller)");
-                        break;
-                    case 2:
-                        LogstashLogger.INSTANCE.info("Furnace switching off (furnace controller)");
-                        break;
-                    case 3:
-                        LogstashLogger.INSTANCE.info("Opening boiler valve (furnace controller)");
-                        break;
-                    case 4:
-                        LogstashLogger.INSTANCE.info("Turning off boiler (furnace controller)");
-                        break;
-                    case 20:
-                        LogstashLogger.INSTANCE.warn("Unconnected, using aux temp (furnace controller)");
-                        break;
-                    case 21:
-                        LogstashLogger.INSTANCE.warn("Unconnected, simply turned on (furnace controller)");
-                        break;
-                    case 22:
-                        LogstashLogger.INSTANCE.warn("Unexpected master command (furnace controller)");
-                        break;
-                    case 23:
-                        LogstashLogger.INSTANCE.warn("Temperature read failure (furnace controller)");
-                        break;
-                    case 40:
-                        LogstashLogger.INSTANCE.error("Sensor init: incomplete sensor count (furnace controller)");
-                        break;
-                    default:
-                        LogstashLogger.INSTANCE.error("Unknown logCode: " + code + " from furnace controller");
-                        break;
-                }
+            int code = Integer.parseInt(slaveResponse.split(":")[minimumSlaveResponse + 1].trim());
+            switch (code) {
+                case 0:
+                    // do nothing, no log to mention
+                    break;
+                case 1:
+                    LogstashLogger.INSTANCE.info("Starting (furnace controller)");
+                    break;
+                case 2:
+                    LogstashLogger.INSTANCE.info("Furnace switching off (furnace controller)");
+                    break;
+                case 3:
+                    LogstashLogger.INSTANCE.info("Opening boiler valve (furnace controller)");
+                    break;
+                case 4:
+                    LogstashLogger.INSTANCE.info("Turning off boiler (furnace controller)");
+                    break;
+                case 20:
+                    LogstashLogger.INSTANCE.warn("Unconnected, using aux temp (furnace controller)");
+                    break;
+                case 21:
+                    LogstashLogger.INSTANCE.warn("Unconnected, simply turned on (furnace controller)");
+                    break;
+                case 22:
+                    LogstashLogger.INSTANCE.warn("Unexpected master command (furnace controller)");
+                    break;
+                case 23:
+                    LogstashLogger.INSTANCE.warn("Temperature read failure (furnace controller)");
+                    break;
+                case 40:
+                    LogstashLogger.INSTANCE.error("Sensor init: incomplete sensor count (furnace controller)");
+                    break;
+                default:
+                    LogstashLogger.INSTANCE.error("Unknown logCode: " + code + " from furnace controller");
+                    break;
             }
         } catch (Exception e) {
             LogstashLogger.INSTANCE.error("Could not log the code message from this response " + slaveResponse
@@ -143,8 +151,12 @@ public class FurnaceMaster {
     void state2Redis(String slaveResponse) {
         try (Jedis jedis = new Jedis("localhost")) {
             boilerState = "1".equals(slaveResponse.split(":")[0].trim());
-            jedis.setex(TemperatureSensor.boiler + ".state", Properties.redisExpireSeconds, slaveResponse.split(":")[0]);
-            jedis.setex(TemperatureSensor.redisKey, Properties.redisExpireSeconds, slaveResponse.split(":")[1]);
+            jedis.setex(TemperatureSensor.stateKey, Properties.redisExpireSeconds, slaveResponse.split(":")[0]);
+            jedis.setex(TemperatureSensor.tempKey, Properties.redisExpireSeconds, slaveResponse.split(":")[1]);
+            if (hasAuxiliryTemperature) {
+                auxiliaryTemperature = Double.parseDouble(slaveResponse.split(":")[2]);
+                jedis.setex("auxiliary.temperature", Properties.redisExpireSeconds, slaveResponse.split(":")[2]);
+            }
         } catch (Exception e) {
             LogstashLogger.INSTANCE.error("Redis exception " + e.getMessage());
         }
