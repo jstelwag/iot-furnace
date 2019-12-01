@@ -4,7 +4,6 @@ import com.pi4j.io.i2c.I2CDevice;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.fluent.Request;
 import redis.clients.jedis.Jedis;
-import util.FluxLogger;
 import util.LogstashLogger;
 import util.Properties;
 import util.TemperatureSensor;
@@ -52,7 +51,6 @@ public class FurnaceMaster {
 
             if (StringUtils.countMatches(slaveResponse, ":") >= 2) {
                 state2Redis(slaveResponse);
-                send2Flux(slaveResponse);
                 send2Log(slaveResponse);
                 LogstashLogger.INSTANCE.info("Requested furnace slave after monitor directive: " + monitorResponse
                         + ", slave request: " + slaveRequest + " and slave response: " + slaveResponse);
@@ -94,24 +92,6 @@ public class FurnaceMaster {
 
     public boolean pumpState(String furnaceResponse) {
         return !boilerState && furnaceResponse.contains("pump\"=\"ON");
-    }
-
-    void send2Flux(String slaveResponse) {
-        try (FluxLogger flux = new FluxLogger()) {
-            flux.send("boiler,name=" + TemperatureSensor.boiler + " state=" + slaveResponse.split(":")[0].trim());
-            if (!TemperatureSensor.isOutlier(slaveResponse.split(":")[1].trim())) {
-                flux.send("boiler,name=" + TemperatureSensor.boiler + ",position=" + TemperatureSensor.position + " temperature="
-                        + slaveResponse.split(":")[1].trim());
-            }
-            //todo, make this a property
-            if (StringUtils.countMatches(slaveResponse, ":") >= 2
-                    && !TemperatureSensor.isOutlier(slaveResponse.split(":")[2].trim())) {
-                auxiliaryTemperature = Double.parseDouble(slaveResponse.split(":")[2].trim());
-                flux.send("environment.temperature " + deviceName + "=" + slaveResponse.split(":")[2].trim());
-            }
-        } catch (IOException e) {
-            LogstashLogger.INSTANCE.error("Failed to send to flux " + e.getMessage());
-        }
     }
 
     void send2Log(String slaveResponse) {
