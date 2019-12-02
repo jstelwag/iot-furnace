@@ -1,12 +1,12 @@
-package util;
+package furnace;
 
+import common.Properties;
 import org.apache.commons.lang3.math.NumberUtils;
 
 /**
  * Created by Jaap on 25-7-2016.
  */
-public class TemperatureSensor {
-
+public class BoilerTemperatureSensor {
     public final static String position;
     public final static String boiler;
     public final static String tempKey;

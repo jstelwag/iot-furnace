@@ -1,16 +1,17 @@
+import furnace.FurnaceStateToInflux;
 import handlers.RedisHandler;
 import i2c.Master;
-import monitor.FurnaceMonitor;
-import org.apache.commons.lang3.StringUtils;
+import iot.DallasTemperature;
+import furnace.FurnaceSlave;
+import furnace.FurnaceMonitor;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
-import util.FluxLogger;
-import util.LogstashLogger;
-import util.Properties;
+import common.Properties;
+import common.LogstashLogger;
 
 /**
  * Created by Jaap on 25-7-2016.
@@ -19,9 +20,18 @@ public class Main {
     public static void main(String[] args) {
         try {
             switch (args[0]) {
-                case "FluxLogger":
+                case "FurnaceStateToInflux":
                     if (hasLogger(args[0])) {
-                        new FluxLogger().log().close();
+                        try (FurnaceStateToInflux influx = new FurnaceStateToInflux()) {
+                            influx.run();
+                        }
+                    }
+                    break;
+                case "FluxLogger": //todo remove this
+                    if (hasLogger(args[0])) {
+                        try (FurnaceStateToInflux influx = new FurnaceStateToInflux()) {
+                            influx.run();
+                        }
                     }
                     break;
                 case "FurnaceSlave":

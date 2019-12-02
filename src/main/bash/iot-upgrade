@@ -11,7 +11,7 @@ if [ "${gitstatus}" = "Already up-to-date." ]; then
 else
   /usr/bin/git pull
   /usr/bin/mvn clean install
-  /usr/bin/crontab /home/pi/iot-furnace/src/main/bash/crontab
+  /usr/bin/crontab /home/pi/iot-furnace/src/main/bash/crontab-raspi
   /bin/echo "iot-furnace-${iotid}:INFO: Update completed (iot-upgrade)" > /dev/udp/${logstaship}/${logstashport}
 fi
 

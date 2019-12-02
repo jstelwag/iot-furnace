@@ -3,7 +3,7 @@ package i2c;
 import com.pi4j.io.i2c.I2CDevice;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.entity.ContentType;
-import util.LogstashLogger;
+import common.LogstashLogger;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -35,7 +35,7 @@ public class ValveMaster {
             String monitorResponse = Request.Post(monitorRequest)
                     .bodyString(deviceId + ":", ContentType.DEFAULT_TEXT).execute().returnContent().asString();
             devices.get(deviceId).write(monitorResponse.trim().getBytes());
-            slaveResponse = Master.response(devices.get(deviceId));
+            slaveResponse = I2CUtil.byteToString(devices.get(deviceId));
             LogstashLogger.INSTANCE.info("Requested valve slave from monitor directive " + monitorResponse +
                     " which after passing on to the slave resulted in the following response: " + slaveResponse);
         } catch (IOException e) {

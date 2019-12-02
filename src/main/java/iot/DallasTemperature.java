@@ -1,10 +1,12 @@
+package iot;
+
 import java.io.IOException;
 import com.pi4j.io.w1.W1Device;
 import com.pi4j.io.w1.W1Master;
 import com.pi4j.component.temperature.impl.TmpDS18B20DeviceType;
 import com.pi4j.component.temperature.TemperatureSensor;
 import org.apache.http.client.fluent.Request;
-import util.Properties;
+import common.Properties;
 
 public class DallasTemperature {
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 # respberry pi setup script
 # first run sudo apt-get -y install git && git clone https://github.com/jstelwag/iot-furnace
-# then sh iot-furnace/src/main/bash/setup
+# then sh iot-furnace/src/main/bash/setup-raspi
 
 sudo apt-get update
 sudo apt-get -y upgrade

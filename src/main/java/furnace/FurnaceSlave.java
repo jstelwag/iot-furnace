@@ -1,17 +1,17 @@
+package furnace;
+
+import common.LogstashLogger;
+import common.Properties;
 import gnu.io.CommPortIdentifier;
 import gnu.io.SerialPort;
 import gnu.io.SerialPortEvent;
 import gnu.io.SerialPortEventListener;
-import monitor.FurnaceMonitor;
 import org.apache.commons.lang3.StringUtils;
 import redis.clients.jedis.Jedis;
-import util.FluxLogger;
-import util.LogstashLogger;
-import util.Properties;
-import util.TemperatureSensor;
 
-import java.io.*;
-import java.util.Calendar;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.Date;
 import java.util.Enumeration;
 
@@ -32,9 +32,8 @@ public class FurnaceSlave implements SerialPortEventListener {
      */
     private BufferedReader input;
     private SerialPort serialPort;
-    private Jedis jedis;
 
-    private final String iotId;
+    private final String deviceName;
 
     /** Milliseconds to block while waiting for port open */
     private static final int TIME_OUT = 2000;
@@ -43,17 +42,15 @@ public class FurnaceSlave implements SerialPortEventListener {
 
     public FurnaceSlave() {
         startTime = String.valueOf(new Date().getTime());
-        jedis = new Jedis("localhost");
-        if (jedis.exists(STARTTIME)) {
-            jedis.close();
-            System.exit(0);
+        try (Jedis jedis = new Jedis("localhost")) {
+            if (jedis.exists(STARTTIME)) {
+                System.exit(0);
+            }
+            jedis.setex(STARTTIME, TTL, startTime);
         }
 
-        jedis.setex(STARTTIME, TTL, startTime);
-        jedis.close();
-
         Properties prop = new Properties();
-        iotId = prop.deviceName;
+        deviceName = prop.deviceName;
         // the next line is for Raspberry Pi and
         // gets us into the while loop and was suggested here was suggested http://www.raspberrypi.org/phpBB3/viewtopic.php?f=81&t=32186
         System.setProperty("gnu.io.rxtx.SerialPorts", prop.prop.getProperty("usb.furnace"));
@@ -101,11 +98,6 @@ public class FurnaceSlave implements SerialPortEventListener {
      * This will prevent port locking on platforms like Linux.
      */
     public synchronized void close() {
-        if (jedis == null || !jedis.isConnected()) {
-            jedis = new Jedis("localhost");
-        }
-        jedis.del(STARTTIME);
-        jedis.close();
         if (serialPort != null) {
             serialPort.removeEventListener();
             serialPort.close();
@@ -116,58 +108,34 @@ public class FurnaceSlave implements SerialPortEventListener {
      * Handle an event on the serial port. Read the data and print it.
      */
     public synchronized void serialEvent(SerialPortEvent oEvent) {
-        jedis = new Jedis("localhost");
-        if (jedis.exists(STARTTIME) && !jedis.get(STARTTIME).equals(startTime)) {
-            LogstashLogger.INSTANCE.info("Connection hijack, exiting SolarSlave");
-            jedis.close();
-            System.exit(0);
+        try (Jedis jedis = new Jedis("localhost")) {
+            if (jedis.exists(STARTTIME) && !jedis.get(STARTTIME).equals(startTime)) {
+                LogstashLogger.INSTANCE.info("Connection hijack, exiting SolarSlave");
+                System.exit(0);
+            }
+            jedis.setex(STARTTIME, TTL, startTime);
         }
-        jedis.setex(STARTTIME, TTL, startTime);
         if (oEvent.getEventType() == SerialPortEvent.DATA_AVAILABLE) {
             try {
                 String inputLine = input.readLine();
                 if (inputLine.startsWith("log:")) {
-                    LogstashLogger.INSTANCE.message("iot-furnace-controller-" + iotId, inputLine.substring(4).trim());
+                    LogstashLogger.INSTANCE.message("iot-furnace-controller-" + deviceName, inputLine.substring(4).trim());
                 } else if (StringUtils.countMatches(inputLine, ":") >= 1) {
-                    jedis.setex(TemperatureSensor.boiler + ".state", Properties.redisExpireSeconds, inputLine.split(":")[0]);
-                    if (!TemperatureSensor.isOutlier(inputLine.split(":")[1])) {
-                        jedis.setex(TemperatureSensor.boiler + "." + TemperatureSensor.position, Properties.redisExpireSeconds, inputLine.split(":")[1]);
-                    }
-                    if (StringUtils.countMatches(inputLine, ":") > 1) {
-                        if (!TemperatureSensor.isOutlier(inputLine.split(":")[2])) {
-                            jedis.setex("auxiliary.temperature", Properties.redisExpireSeconds, inputLine.split(":")[2]);
+                    try (FurnaceDAO furnaceDAO = new FurnaceDAO(); BoilerDAO boilerDAO = new BoilerDAO()) {
+                        boilerDAO.setState("ON".equalsIgnoreCase(inputLine.split(":")[0]));
+                        boilerDAO.setTemperature(inputLine.split(":")[1]);
+                        if (StringUtils.countMatches(inputLine, ":") > 1) {
+                            furnaceDAO.setAuxiliaryTemperature(inputLine.split(":")[2]);
                         }
-                    }
-
-                    boolean furnaceState;
-                    if (jedis.exists(FurnaceMonitor.FURNACE_KEY)) {
-                        furnaceState = "ON".equals(jedis.get(FurnaceMonitor.FURNACE_KEY));
-                    } else {
-                        Calendar now = Calendar.getInstance();
-                        LogstashLogger.INSTANCE.warn("No iot-monitor furnace state available, using month based default");
-                        furnaceState = (now.get(Calendar.MONTH) < 4 || now.get(Calendar.MONTH) > 9) &&
-                                (now.get(Calendar.HOUR) < 23 && now.get(Calendar.HOUR) > 5);
-                    }
-
-                    boolean pumpState = false;
-                    if (jedis.exists(FurnaceMonitor.PUMP_KEY)) {
-                        pumpState = "ON".equals(jedis.get(FurnaceMonitor.PUMP_KEY));
-                    } else {
-                        LogstashLogger.INSTANCE.warn("No iot-monitor pump state available");
-                    }
-                    try {
-                        serialPort.getOutputStream().write(furnaceState ? 'T' : 'F');
-                        serialPort.getOutputStream().write(pumpState ? 'T' : 'F');
-                        serialPort.getOutputStream().flush();
-                    } catch (IOException e) {
-                        LogstashLogger.INSTANCE.error("Writing to furnace controller");
-                        close();
-                        System.exit(0);
-                    }
-                    try (FluxLogger flux = new FluxLogger()) {
-                        flux.send("furnace,name=\"" + iotId + "\" stateConfirmed=" + (furnaceState ? "1i" : "0i"));
-                        //todo set if pump exists
-                        flux.send("furnace,name=\"" + iotId + "\" pumpState=" + (pumpState ? "1i" : "0i"));
+                        try {
+                            serialPort.getOutputStream().write(furnaceDAO.getFurnaceState() ? 'T' : 'F');
+                            serialPort.getOutputStream().write(furnaceDAO.getPumpState() ? 'T' : 'F');
+                            serialPort.getOutputStream().flush();
+                        } catch (IOException e) {
+                            LogstashLogger.INSTANCE.error("Writing to furnace controller");
+                            close();
+                            System.exit(0);
+                        }
                     }
                 } else {
                     LogstashLogger.INSTANCE.error("Received garbage from the Furnace micro controller: " + inputLine);
@@ -178,7 +146,6 @@ public class FurnaceSlave implements SerialPortEventListener {
                 System.exit(0);
             }
         }
-        jedis.close();
     }
 
     public void run() {

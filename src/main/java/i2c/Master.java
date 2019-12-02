@@ -3,10 +3,11 @@ package i2c;
 import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
+import furnace.I2CFurnaceMaster;
 import org.apache.commons.lang3.StringUtils;
 import redis.clients.jedis.Jedis;
-import util.LogstashLogger;
-import util.Properties;
+import common.Properties;
+import common.LogstashLogger;
 
 import java.io.IOException;
 import java.util.Date;
@@ -18,17 +19,15 @@ import java.util.Date;
 public class Master {
 
     private ValveMaster valve;
-    private FurnaceMaster furnace;
-
+    private I2CFurnaceMaster furnace;
     private final I2CBus bus;
-
-    long lastSuccessTime = 0;
+    private long lastSuccessTime = 0;
 
     public Master() throws IOException, I2CFactory.UnsupportedBusNumberException {
         Properties prop = new Properties();
         lastSuccessTime = new Date().getTime();
         valve = new ValveMaster(prop.monitorIp, prop.monitorPort);
-        furnace = new FurnaceMaster(prop);
+        furnace = new I2CFurnaceMaster(prop.hasAuxilaryTemperature);
         try {
             bus = I2CFactory.getInstance(I2CBus.BUS_1);
             LogstashLogger.INSTANCE.info("Started i2c master");
@@ -76,27 +75,13 @@ public class Master {
         }
     }
 
-    public static String response(I2CDevice device) throws IOException {
-        String retval = "";
-
-        byte res[] = new byte[32];
-        device.read(res, 0, 32);
-        for (byte b : res) {
-            if (b > 0) {
-                retval += (char)(b & 0xFF);
-            }
-        }
-
-        return retval;
-    }
-
     public int deviceCount() {
         int retval = 0;
         for (int i = 0; i < 255; i++) {
             try {
                 I2CDevice device = bus.getDevice(i);
-                device.write("H".getBytes());
-                if (StringUtils.isNotEmpty(response(device))) {
+                device.write("H".getBytes()); // "H" is a hello message
+                if (StringUtils.isNotEmpty(I2CUtil.byteToString(device))) {
                     retval++;
                 }
             } catch (IOException ignored) {
@@ -113,7 +98,7 @@ public class Master {
             try {
                 I2CDevice device = bus.getDevice(i); //throws an exception when the device does not exist
                 device.write("H".getBytes());
-                String response = response(device);
+                String response = I2CUtil.byteToString(device);
                 LogstashLogger.INSTANCE.info("Device " + i + " response " + response);
                 if (response.startsWith("F:") && StringUtils.countMatches(response, ":") > 1) {
                     //deprecate

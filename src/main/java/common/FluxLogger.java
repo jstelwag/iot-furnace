@@ -1,6 +1,4 @@
-package util;
-
-import redis.clients.jedis.Jedis;
+package common;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -31,36 +29,6 @@ public class FluxLogger implements Closeable {
             LogstashLogger.INSTANCE.error("Unable to open socket to connect to InfluxDB @" + host + ":" + port
                     + " " + e.getMessage());
             throw e;
-        }
-    }
-
-    public FluxLogger log() {
-        try (Jedis jedis = new Jedis("localhost")){
-            logState(jedis);
-            logTemperatures(jedis);
-        }
-        return this;
-    }
-
-    private void logTemperatures(Jedis jedis) {
-        if (jedis.exists(TemperatureSensor.tempKey)) {
-            String line = "boiler,name=" + TemperatureSensor.boiler + ",position=" + TemperatureSensor.position
-                        + " temperature=" + jedis.get(TemperatureSensor.tempKey);
-            send(line);
-        } else {
-            LogstashLogger.INSTANCE.warn("No temperature for " + TemperatureSensor.tempKey);
-        }
-
-        if (jedis.exists("auxiliary.temperature")) {
-            send("environment.temperature " + deviceName + "=" + jedis.get("auxiliary.temperature"));
-        }
-    }
-
-    private void logState(Jedis jedis) {
-        if (jedis.exists(TemperatureSensor.stateKey)) {
-            send("boiler,name=" + TemperatureSensor.boiler + " state=" + jedis.get(TemperatureSensor.stateKey));
-        } else {
-            LogstashLogger.INSTANCE.error("There is no state in Redis to log boiler state");
         }
     }
 

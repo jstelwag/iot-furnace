@@ -1,4 +1,4 @@
-package util;
+package common;
 
 import redis.clients.jedis.Jedis;
 
@@ -74,8 +74,8 @@ public class Properties {
                 break;
             case "000000009dbfb2a1":
                 deviceName = "kasteel_zolder";
-                services = "I2CMaster, http";
-                loggers = "FluxLogger";
+                services = "I2CMaster, http, FurnaceMonitor";
+                loggers = "FurnaceStateToInflux";
                 boilerName = "boiler120";
                 boilerSensor = "Ttop";
                 hasAuxilaryTemperature = true;

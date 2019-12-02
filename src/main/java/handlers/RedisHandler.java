@@ -5,7 +5,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import redis.clients.jedis.Jedis;
-import util.LogstashLogger;
+import common.LogstashLogger;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
