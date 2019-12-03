@@ -12,6 +12,9 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import common.Properties;
 import common.LogstashLogger;
+import solar.Controller;
+import solar.SolarSlave;
+import solar.SolarStateToInflux;
 
 /**
  * Created by Jaap on 25-7-2016.
@@ -25,14 +28,19 @@ public class Main {
                         new FurnaceStateToInflux().run();
                     }
                     break;
-                case "FluxLogger": //todo remove this
+                case "SolarStateToInflux":
                     if (hasLogger(args[0])) {
-                        new FurnaceStateToInflux().run();
+                        new SolarStateToInflux().run();
                     }
                     break;
                 case "FurnaceSlave":
                     if (hasService(args[0])) {
                         new FurnaceSlave().run();
+                    }
+                    break;
+                case "SolarSlave":
+                    if (hasService(args[0])) {
+                        new SolarSlave().run();
                     }
                     break;
                 case "FurnaceMonitor":
@@ -53,6 +61,11 @@ public class Main {
                 case "http":
                     if (hasService(args[0])) {
                         startHttp(new Properties().httpPort);
+                    }
+                    break;
+                case "SolarControl":
+                    if (hasService(args[0])) {
+                        new Controller().run();
                     }
                     break;
                 case "prop":

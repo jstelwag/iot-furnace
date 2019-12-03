@@ -3,13 +3,14 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 HOME=/home/pi
 
 */5 * * * * iot-furnace FurnaceSlave >> $HOME/furnace.log 2>&1
-* * * * * iot-furnace FluxLogger >> $HOME/furnace.log 2>&1
-* * * * * (sleep 30 && iot-furnace FluxLogger >> $HOME/furnace.log 2>&1)
+*/5 * * * * (sleep 60 && iot-furnace SolarSlave >> $HOME/runtime.log 2>&1)
 * * * * * (sleep 15 && iot-furnace FurnaceStateToInflux >> $HOME/furnace.log 2>&1)
 * * * * * (sleep 45 && iot-furnace FurnaceStateToInflux >> $HOME/furnace.log 2>&1)
 * * * * * iot-furnace DallasTemperature >> $HOME/furnace.log 2>&1
 * * * * * (sleep 30 && iot-furnace DallasTemperature >> $HOME/furnace.log 2>&1)
 * * * * * iot-furnace FurnaceMonitor >> $HOME/furnace.log 2>&1
+* * * * * iot-furnace SolarControl >> $HOME/runtime.log 2>&1
+* * * * * (sleep 30 && iot-furnace SolarControl >> $HOME/runtime.log 2>&1)
 
 0 2 * * * echo rpi_$(/usr/local/bin/iot-furnace prop deviceName) | sudo tee /etc/hostname >> /dev/null 2>&1
 0 3 * * * (iot-upgrade && sudo reboot) > $HOME/upgrade.log 2>&1

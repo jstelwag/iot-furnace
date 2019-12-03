@@ -23,7 +23,7 @@ public class I2CFurnaceMaster {
         }
     }
 
-    public Map<String, I2CDevice> devices = new HashMap<>();
+    public final Map<String, I2CDevice> devices = new HashMap<>();
 
     public boolean parse(String deviceName) {
         try {

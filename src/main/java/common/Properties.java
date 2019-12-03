@@ -6,11 +6,11 @@ import java.io.*;
 
 public class Properties {
 
-    public java.util.Properties prop = null;
+    private java.util.Properties prop = null;
     public String cpuId;
     public String deviceName;
 
-    public int httpPort = 8080;
+    public final int httpPort = 8080;
 
     public String influxIp = "192.168.178.100";
     public int influxPort = 8087;
@@ -25,11 +25,18 @@ public class Properties {
     public String boilerSensor;
     public boolean hasAuxilaryTemperature = true;
 
+    public final int elevation = 100;
+    public final double latitude = 10.0;
+    public final double longitude = 5.0;
+
+    public final String usbSolar = "/dev/ttyACM0";
+    public final String usbFurnace = "/dev/ttyUSB0";
+
     public String services;
     public String loggers;
 
-    private final String PROP_FILE = "/etc/iot.conf";
-    private final String CPU_INFO = "/proc/cpuinfo";
+    final String PROP_FILE = "/etc/iot.conf";
+    final String CPU_INFO = "/proc/cpuinfo";
 
     public Properties()  {
         File confFile = new File(PROP_FILE);
@@ -91,8 +98,8 @@ public class Properties {
                 deviceName = "koetshuis_kelder";
                 boilerName = "boiler200";
                 boilerSensor = "Ttop";
-                services = "http, FurnaceMonitor";
-                loggers = "FurnaceStateToInflux";
+                services = "http, FurnaceMonitor, Solar, FurnaceSlave, SolarSlave";
+                loggers = "FurnaceStateToInflux, SolarStateToInflux";
                 break;
         }
 

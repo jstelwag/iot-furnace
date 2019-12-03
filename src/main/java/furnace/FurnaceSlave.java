@@ -53,20 +53,20 @@ public class FurnaceSlave implements SerialPortEventListener {
         deviceName = prop.deviceName;
         // the next line is for Raspberry Pi and
         // gets us into the while loop and was suggested here was suggested http://www.raspberrypi.org/phpBB3/viewtopic.php?f=81&t=32186
-        System.setProperty("gnu.io.rxtx.SerialPorts", prop.prop.getProperty("usb.furnace"));
+        System.setProperty("gnu.io.rxtx.SerialPorts", prop.usbFurnace);
 
         CommPortIdentifier portId = null;
         Enumeration portEnum = CommPortIdentifier.getPortIdentifiers();
 
         while (portEnum.hasMoreElements()) {
             CommPortIdentifier currPortId = (CommPortIdentifier) portEnum.nextElement();
-            if (currPortId.getName().equals(prop.prop.getProperty("usb.furnace"))) {
+            if (currPortId.getName().equals(prop.usbFurnace)) {
                 portId = currPortId;
                 break;
             }
         }
         if (portId == null) {
-            LogstashLogger.INSTANCE.error("Could not find USB at " + prop.prop.getProperty("usb.furnace"));
+            LogstashLogger.INSTANCE.error("Could not find USB at " + prop.usbFurnace);
             close();
             System.exit(0);
         }

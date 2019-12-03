@@ -18,8 +18,8 @@ import java.util.Date;
  */
 public class Master {
 
-    private ValveMaster valve;
-    private I2CFurnaceMaster furnace;
+    private final ValveMaster valve;
+    private final I2CFurnaceMaster furnace;
     private final I2CBus bus;
     private long lastSuccessTime = 0;
 
