@@ -14,7 +14,6 @@ public class BoilerDAO implements Closeable {
     public final static String position;
     public final static String boiler;
     public final static String tempKey;
-    public static final String BOILER_KEY = "boiler.state";
 
     static {
         Properties prop = new Properties();
@@ -32,18 +31,18 @@ public class BoilerDAO implements Closeable {
     }
 
     public void setState(boolean state) {
-        jedis.setex(BOILER_KEY, TTL1, state ? "ON" : "OFF");
+        jedis.setex(boiler + ".state", TTL1, state ? "ON" : "OFF");
     }
 
     public boolean getState() {
-        if (jedis.exists(BOILER_KEY)) {
-            return "ON".equalsIgnoreCase(jedis.get(BOILER_KEY));
+        if (jedis.exists(boiler + ".state")) {
+            return "ON".equalsIgnoreCase(jedis.get(boiler + ".state"));
         }
         return false;
     }
     public Boolean getStateRaw() {
-        if (jedis.exists(BOILER_KEY)) {
-            return "ON".equalsIgnoreCase(jedis.get(BOILER_KEY));
+        if (jedis.exists(boiler + ".state")) {
+            return "ON".equalsIgnoreCase(jedis.get(boiler + ".state"));
         }
         return null;
     }
@@ -69,7 +68,7 @@ public class BoilerDAO implements Closeable {
             LogstashLogger.INSTANCE.warn("Not a parsable temperature '" + temperature + "'");
             return true;
         }
-        if (t < minTemp || t > maxTemp) {
+        if (minTemp > t || t > maxTemp) {
             LogstashLogger.INSTANCE.warn("Temperature outside range " + temperature);
             return true;
         }
