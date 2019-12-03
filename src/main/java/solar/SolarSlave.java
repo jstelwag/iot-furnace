@@ -116,7 +116,7 @@ public class SolarSlave implements SerialPortEventListener {
             jedis.setex(STARTTIME, TTL, startTime);
             if (oEvent.getEventType() == SerialPortEvent.DATA_AVAILABLE) {
                 String inputLine = input.readLine();
-                LogstashLogger.INSTANCE.info("Serial event: " + inputLine);
+                LogstashLogger.INSTANCE.info("Solar event: " + inputLine);
                 if (StringUtils.countMatches(inputLine, ":") == 7) {
                     //Format: Ttop:Tmiddle:Tbottom:TflowIn:TflowOut:SvalveI:SvalveII:Spump
                     if (!TemperatureSensor.isOutlier(inputLine.split(":")[0])) {
