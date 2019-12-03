@@ -2,7 +2,6 @@ package furnace;
 
 import common.LogstashLogger;
 import common.Properties;
-import org.apache.commons.lang3.math.NumberUtils;
 import redis.clients.jedis.Jedis;
 
 import java.io.Closeable;
@@ -63,19 +62,19 @@ public class BoilerDAO implements Closeable {
     }
 
     public static boolean isOutlier(String temperature, double minTemp, double maxTemp, double maxDelta, Double previousTemperature) {
+        double t;
         try {
-            Double.parseDouble(temperature);
+            t = Double.parseDouble(temperature);
         } catch (NumberFormatException e) {
             LogstashLogger.INSTANCE.warn("Not a parsable temperature '" + temperature + "'");
             return true;
         }
-        double t = Double.parseDouble(temperature);
         if (t < minTemp || t > maxTemp) {
-            LogstashLogger.INSTANCE.warn("Unrealistic temperature " + t);
+            LogstashLogger.INSTANCE.warn("Temperature outside range " + temperature);
             return true;
         }
         if (previousTemperature != null && Math.abs(previousTemperature - t) > maxDelta) {
-            LogstashLogger.INSTANCE.warn("Ignoring too large temperature difference");
+            LogstashLogger.INSTANCE.warn("Too large temperature difference " + temperature);
             return true;
         }
         return false;
