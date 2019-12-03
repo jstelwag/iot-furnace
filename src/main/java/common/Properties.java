@@ -26,8 +26,8 @@ public class Properties {
     public boolean hasAuxilaryTemperature = true;
 
     public final int elevation = 100;
-    public final double latitude = 10.0;
-    public final double longitude = 5.0;
+    public final double latitude = 50.803;
+    public final double longitude = 5.955;
 
     public final String usbSolar = "/dev/ttyACM0";
     public final String usbFurnace = "/dev/ttyUSB0";
@@ -98,7 +98,7 @@ public class Properties {
                 deviceName = "koetshuis_kelder";
                 boilerName = "boiler200";
                 boilerSensor = "Ttop";
-                services = "http, FurnaceMonitor, Solar, FurnaceSlave, SolarSlave";
+                services = "http, FurnaceMonitor, SolarControl, FurnaceSlave, SolarSlave";
                 loggers = "FurnaceStateToInflux, SolarStateToInflux";
                 break;
         }
