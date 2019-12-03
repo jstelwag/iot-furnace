@@ -7,7 +7,6 @@ import gnu.io.CommPortIdentifier;
 import gnu.io.SerialPort;
 import gnu.io.SerialPortEvent;
 import gnu.io.SerialPortEventListener;
-import org.apache.commons.lang3.StringUtils;
 import redis.clients.jedis.Jedis;
 
 import java.io.*;
@@ -23,6 +22,8 @@ public class SolarSlave implements SerialPortEventListener {
     private final static int TTL = 60;
     private final String startTime;
     private static final String STARTTIME = "solarslave.starttime";
+    private long lastRequest = 0;
+    private final long MIN_REQUEST_INTERVAL = 15000;
     /**
      * A BufferedReader which will be fed by a InputStreamReader
      * converting the bytes into characters
@@ -108,72 +109,76 @@ public class SolarSlave implements SerialPortEventListener {
      * Handle an event on the serial port. Read the data and print it.
      */
     public synchronized void serialEvent(SerialPortEvent oEvent) {
-        try (Jedis jedis = new Jedis("localhost")) {
-            if (jedis.exists(STARTTIME) && !jedis.get(STARTTIME).equals(startTime)) {
-                LogstashLogger.INSTANCE.info("Connection hijack, exiting SolarSlave");
+        //Avoid a DOS attack from the arduino
+        if (lastRequest == 0 || System.currentTimeMillis() - lastRequest > MIN_REQUEST_INTERVAL) {
+            lastRequest = System.currentTimeMillis();
+
+            try (Jedis jedis = new Jedis("localhost")) {
+                if (jedis.exists(STARTTIME) && !jedis.get(STARTTIME).equals(startTime)) {
+                    LogstashLogger.INSTANCE.info("Connection hijack, exiting SolarSlave");
+                    System.exit(0);
+                }
+
+                jedis.setex(STARTTIME, TTL, startTime);
+                if (oEvent.getEventType() == SerialPortEvent.DATA_AVAILABLE) {
+                    String inputLine = input.readLine();
+                    LogstashLogger.INSTANCE.info("Solar event: " + inputLine);
+                    String inputs[] = inputLine.split(":");
+                    if (inputs.length == 8) {
+                        //Format: Ttop:Tmiddle:Tbottom:TflowIn:TflowOut:SvalveI:SvalveII:Spump
+                        //       20.06:17.87:16.31:14.00:15.69:T:T:T
+                        if (!BoilerDAO.isOutlier(inputs[0], 5.0
+                                , 105.0, 5.0, null)) {
+                            jedis.setex("boiler500.Ttop", 60, inputs[0]);
+                        }
+                        if (!BoilerDAO.isOutlier(inputs[1], 5.0
+                                , 105.0, 5.0, null)) {
+                            jedis.setex("boiler500.Tmiddle", 60, inputs[1]);
+                        }
+                        if (!BoilerDAO.isOutlier(inputs[2], 5.0
+                                , 105.0, 5.0, null)) {
+                            jedis.setex("boiler500.Tbottom", 60, inputs[2]);
+                        }
+                        if (!BoilerDAO.isOutlier(inputs[3], -20.0
+                                , 125.0, 5.0, null)) {
+                            jedis.setex("pipe.TflowIn", 60, inputs[3]);
+                        }
+                        if (!BoilerDAO.isOutlier(inputs[4], -20.0
+                                , 125.0, 5.0, null)) {
+                            jedis.setex("pipe.TflowOut", 60, inputs[4]);
+                        }
+                        jedis.setex("solarStateReal", 60, SolarState.principalState(
+                                "T".equals(inputs[5]), "T".equals(inputs[6]), "T".equals(inputs[7])).name());
+
+                        jedis.lpush("pipe.TflowSet", Double.toString(((double) new Date().getTime()) / (60 * 60 * 1000))
+                                + ":" + inputs[4]);
+                        jedis.ltrim("pipe.TflowSet", 0, T_SET_LENGTH);
+
+                        try {
+                            //Response format: [ValveI][ValveII][SolarPump]
+                            if (jedis.exists("solarState")) {
+                                SolarState state = SolarState.valueOf(jedis.get("solarState"));
+                                serialPort.getOutputStream().write(state.line());
+                            } else {
+                                serialPort.getOutputStream().write(SolarState.error.line());
+                            }
+                            serialPort.getOutputStream().flush();
+                        } catch (IOException e) {
+                            LogstashLogger.INSTANCE.error("Failed writing to solar controller");
+                            close();
+                            System.exit(0);
+                        }
+                    } else if (inputLine.startsWith("log:")) {
+                        LogstashLogger.INSTANCE.message("iot-solar-controller", inputLine.substring(4).trim());
+                    } else {
+                        LogstashLogger.INSTANCE.error("Received garbage from the Solar micro controller: " + inputLine);
+                    }
+                }
+            } catch (IOException e) {
+                LogstashLogger.INSTANCE.error("Problem reading serial input from USB, i will kill myself. " + e.getMessage());
+                close();
                 System.exit(0);
             }
-
-            jedis.setex(STARTTIME, TTL, startTime);
-            if (oEvent.getEventType() == SerialPortEvent.DATA_AVAILABLE) {
-                String inputLine = input.readLine();
-                LogstashLogger.INSTANCE.info("Solar event: " + inputLine);
-                if (StringUtils.countMatches(inputLine, ":") == 7) {
-                    //Format: Ttop:Tmiddle:Tbottom:TflowIn:TflowOut:SvalveI:SvalveII:Spump
-                    //       20.06:17.87:16.31:14.00:15.69:T:T:T
-                    if (!BoilerDAO.isOutlier(inputLine.split(":")[0], 5.0
-                            , 105.0, 5.0, null)) {
-                        jedis.setex("boiler500.Ttop", 60, inputLine.split(":")[0]);
-                    }
-                    if (!BoilerDAO.isOutlier(inputLine.split(":")[1], 5.0
-                            , 105.0, 5.0, null)) {
-                        jedis.setex("boiler500.Tmiddle", 60, inputLine.split(":")[1]);
-                    }
-                    if (!BoilerDAO.isOutlier(inputLine.split(":")[2], 5.0
-                            , 105.0, 5.0, null)) {
-                        jedis.setex("boiler500.Tbottom", 60, inputLine.split(":")[2]);
-                    }
-                    if (!BoilerDAO.isOutlier(inputLine.split(":")[3], -20.0
-                            , 125.0, 5.0, null)) {
-                        jedis.setex("pipe.TflowIn", 60, inputLine.split(":")[3]);
-                    }
-                    if (!BoilerDAO.isOutlier(inputLine.split(":")[4], -20.0
-                            , 125.0, 5.0, null)) {
-                        jedis.setex("pipe.TflowOut", 60, inputLine.split(":")[4]);
-                    }
-                    jedis.setex("solarStateReal", 60, SolarState.principalState(
-                            "T".equals(inputLine.split(":")[5])
-                            , "T".equals(inputLine.split(":")[6])
-                            , "T".equals(inputLine.split(":")[7])).name());
-
-                    jedis.lpush("pipe.TflowSet", Double.toString(((double) new Date().getTime()) / (60 * 60 * 1000))
-                            + ":" + inputLine.split(":")[4]);
-                    jedis.ltrim("pipe.TflowSet", 0, T_SET_LENGTH);
-
-                    try {
-                        //Response format: [ValveI][ValveII][SolarPump]
-                        if (jedis.exists("solarState")) {
-                            SolarState state = SolarState.valueOf(jedis.get("solarState"));
-                            serialPort.getOutputStream().write(state.line());
-                        } else {
-                            serialPort.getOutputStream().write(SolarState.error.line());
-                        }
-                        serialPort.getOutputStream().flush();
-                    } catch (IOException e) {
-                        LogstashLogger.INSTANCE.error("Failed writing to solar controller");
-                        close();
-                        System.exit(0);
-                    }
-                } else if (inputLine.startsWith("log:")) {
-                    LogstashLogger.INSTANCE.message("iot-solar-controller", inputLine.substring(4).trim());
-                } else {
-                    LogstashLogger.INSTANCE.error("Received garbage from the Solar micro controller: " + inputLine);
-                }
-            }
-        } catch (IOException e) {
-            LogstashLogger.INSTANCE.error("Problem reading serial input from USB, i will kill myself. " + e.getMessage());
-            close();
-            System.exit(0);
         }
     }
 

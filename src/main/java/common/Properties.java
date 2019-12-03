@@ -1,7 +1,5 @@
 package common;
 
-import redis.clients.jedis.Jedis;
-
 import java.io.*;
 
 public class Properties {
@@ -89,20 +87,6 @@ public class Properties {
                 services = "http, FurnaceMonitor, SolarControl, FurnaceSlave, SolarSlave";
                 loggers = "FurnaceStateToInflux, SolarStateToInflux";
                 break;
-        }
-
-        try (Jedis jedis = new Jedis("localhost")) {
-            if (deviceName != null) {
-                jedis.setex("deviceName", 24 * 60 * 60, deviceName);
-            }
-            if (services != null) {
-                jedis.setex("services", 24 * 60 * 60, services);
-            }
-            if (loggers != null) {
-                jedis.setex("loggers", 24 * 60 * 60, loggers);
-            }
-        } catch (Exception e) {
-            LogstashLogger.INSTANCE.warn("Failed to set device properties in Redis. " + e.getMessage());
         }
     }
 }
