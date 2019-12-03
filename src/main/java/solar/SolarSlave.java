@@ -2,6 +2,7 @@ package solar;
 
 import common.LogstashLogger;
 import common.Properties;
+import furnace.BoilerDAO;
 import gnu.io.CommPortIdentifier;
 import gnu.io.SerialPort;
 import gnu.io.SerialPortEvent;
@@ -119,19 +120,25 @@ public class SolarSlave implements SerialPortEventListener {
                 LogstashLogger.INSTANCE.info("Solar event: " + inputLine);
                 if (StringUtils.countMatches(inputLine, ":") == 7) {
                     //Format: Ttop:Tmiddle:Tbottom:TflowIn:TflowOut:SvalveI:SvalveII:Spump
-                    if (!TemperatureSensor.isOutlier(inputLine.split(":")[0])) {
+                    //       20.06:17.87:16.31:14.00:15.69:T:T:T
+                    if (!BoilerDAO.isOutlier(inputLine.split(":")[0], 5.0
+                            , 105.0, 5.0, null)) {
                         jedis.setex("boiler500.Ttop", 60, inputLine.split(":")[0]);
                     }
-                    if (!TemperatureSensor.isOutlier(inputLine.split(":")[1])) {
+                    if (!BoilerDAO.isOutlier(inputLine.split(":")[1], 5.0
+                            , 105.0, 5.0, null)) {
                         jedis.setex("boiler500.Tmiddle", 60, inputLine.split(":")[1]);
                     }
-                    if (!TemperatureSensor.isOutlier(inputLine.split(":")[2])) {
+                    if (!BoilerDAO.isOutlier(inputLine.split(":")[2], 5.0
+                            , 105.0, 5.0, null)) {
                         jedis.setex("boiler500.Tbottom", 60, inputLine.split(":")[2]);
                     }
-                    if (!TemperatureSensor.isOutlier(inputLine.split(":")[3])) {
+                    if (!BoilerDAO.isOutlier(inputLine.split(":")[3], -20.0
+                            , 125.0, 5.0, null)) {
                         jedis.setex("pipe.TflowIn", 60, inputLine.split(":")[3]);
                     }
-                    if (!TemperatureSensor.isOutlier(inputLine.split(":")[4])) {
+                    if (!BoilerDAO.isOutlier(inputLine.split(":")[4], -20.0
+                            , 125.0, 5.0, null)) {
                         jedis.setex("pipe.TflowOut", 60, inputLine.split(":")[4]);
                     }
                     jedis.setex("solarStateReal", 60, SolarState.principalState(

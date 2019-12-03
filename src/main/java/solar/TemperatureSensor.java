@@ -16,9 +16,4 @@ public class TemperatureSensor {
         sensors.put("boiler500", new String[]{"Ttop", "Tmiddle", "Tbottom"});
         sensors.put("pipe", new String[]{"TflowIn", "TflowOut"});
     }
-
-    public static boolean isOutlier(String temperature) {
-        return !NumberUtils.isParsable(temperature)
-                || Double.parseDouble(temperature) < -5.0 || Double.parseDouble(temperature) > 120.0;
-    }
 }

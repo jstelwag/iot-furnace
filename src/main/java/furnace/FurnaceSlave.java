@@ -116,7 +116,7 @@ public class FurnaceSlave implements SerialPortEventListener {
                 } else if (StringUtils.countMatches(inputLine, ":") >= 1) {
                     LogstashLogger.INSTANCE.info("Furnace event " + inputLine);
                     try (FurnaceDAO furnaceDAO = new FurnaceDAO(); BoilerDAO boilerDAO = new BoilerDAO()) {
-                        boilerDAO.setState("ON".equalsIgnoreCase(inputLine.split(":")[0]));
+                        boilerDAO.setState("1".equalsIgnoreCase(inputLine.split(":")[0]));
                         boilerDAO.setTemperature(inputLine.split(":")[1]);
                         if (StringUtils.countMatches(inputLine, ":") > 1) {
                             furnaceDAO.setAuxiliaryTemperature(inputLine.split(":")[2]);
