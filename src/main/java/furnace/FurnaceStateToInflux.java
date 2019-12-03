@@ -4,11 +4,10 @@ import common.FluxLogger;
 import common.LogstashLogger;
 import common.Properties;
 
-import java.net.SocketException;
 import java.net.UnknownHostException;
 
 public class FurnaceStateToInflux extends FluxLogger implements Runnable {
-    public FurnaceStateToInflux() throws SocketException, UnknownHostException {
+    public FurnaceStateToInflux() throws UnknownHostException {
         super();
     }
 

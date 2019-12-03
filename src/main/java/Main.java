@@ -22,16 +22,12 @@ public class Main {
             switch (args[0]) {
                 case "FurnaceStateToInflux":
                     if (hasLogger(args[0])) {
-                        try (FurnaceStateToInflux influx = new FurnaceStateToInflux()) {
-                            influx.run();
-                        }
+                        new FurnaceStateToInflux().run();
                     }
                     break;
                 case "FluxLogger": //todo remove this
                     if (hasLogger(args[0])) {
-                        try (FurnaceStateToInflux influx = new FurnaceStateToInflux()) {
-                            influx.run();
-                        }
+                        new FurnaceStateToInflux().run();
                     }
                     break;
                 case "FurnaceSlave":
@@ -56,7 +52,7 @@ public class Main {
                     break;
                 case "http":
                     if (hasService(args[0])) {
-                        startHttp(8080);
+                        startHttp(new Properties().httpPort);
                     }
                     break;
                 case "prop":

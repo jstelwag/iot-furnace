@@ -10,6 +10,8 @@ public class Properties {
     public String cpuId;
     public String deviceName;
 
+    public int httpPort = 8080;
+
     public String influxIp = "192.168.78.100";
     public int influxPort = 8087;
 
