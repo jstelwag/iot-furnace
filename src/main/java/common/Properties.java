@@ -10,7 +10,7 @@ public class Properties {
     public String cpuId;
     public String deviceName;
 
-    public String influxIp = "192.168.78.14";
+    public String influxIp = "192.168.78.100";
     public int influxPort = 8087;
 
     public String monitorIp = "192.168.178.18";
