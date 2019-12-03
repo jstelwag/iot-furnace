@@ -21,9 +21,8 @@ public class FurnaceStateToInflux extends FluxLogger implements Runnable {
     private void logTemperatures() {
         try (BoilerDAO boilerDAO = new BoilerDAO(); FurnaceDAO furnaceDAO = new FurnaceDAO()) {
             if (boilerDAO.getTemperature() != null) {
-                String line = "boiler,name=" + BoilerDAO.boiler + ",position=" + BoilerDAO.position
-                        + " temperature=" + boilerDAO.getTemperature();
-                send(line);
+                send("boiler,name=" + BoilerDAO.boiler + ",position=" + BoilerDAO.position
+                        + " temperature=" + boilerDAO.getTemperature());
             } else {
                 LogstashLogger.INSTANCE.warn("No temperature for " + BoilerDAO.tempKey);
             }
@@ -37,7 +36,7 @@ public class FurnaceStateToInflux extends FluxLogger implements Runnable {
     private void logState() {
         try (BoilerDAO boilerDAO = new BoilerDAO()) {
             if (boilerDAO.getStateRaw() != null) {
-                send("boiler,name=" + BoilerTemperatureSensor.boiler + " state=" + boilerDAO.getStateRaw());
+                send("boiler,name=" + BoilerDAO.boiler + " state=" + boilerDAO.getStateRaw());
             } else {
                 LogstashLogger.INSTANCE.error("There is no state in Redis to log boiler state");
             }

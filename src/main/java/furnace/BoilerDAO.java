@@ -63,10 +63,11 @@ public class BoilerDAO implements Closeable {
     }
 
     public static boolean isOutlier(String temperature, double minTemp, double maxTemp, double maxDelta, Double previousTemperature) {
-        if( !NumberUtils.isParsable(temperature)) {
-            return true;
-        } else {
+        try {
+            Double.parseDouble(temperature);
+        } catch (NumberFormatException e) {
             LogstashLogger.INSTANCE.warn("Not a parsable temperature '" + temperature + "'");
+            return true;
         }
         double t = Double.parseDouble(temperature);
         if (t < minTemp || t > maxTemp) {
