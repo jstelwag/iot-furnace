@@ -6,7 +6,6 @@ import java.io.*;
 
 public class Properties {
 
-    private java.util.Properties prop = null;
     public String cpuId;
     public String deviceName;
 
@@ -35,20 +34,9 @@ public class Properties {
     public String services;
     public String loggers;
 
-    final String PROP_FILE = "/etc/iot.conf";
     final String CPU_INFO = "/proc/cpuinfo";
 
     public Properties()  {
-        File confFile = new File(PROP_FILE);
-        if (confFile.exists()) {
-            try (InputStream inputStream = new FileInputStream(confFile)) {
-                prop = new java.util.Properties();
-                prop.load(inputStream);
-            } catch (IOException e) {
-                prop = null;
-                LogstashLogger.INSTANCE.error("Could not open properties file " + PROP_FILE + ". " + e.getMessage());
-            }
-        }
         try (BufferedReader br = new BufferedReader(new FileReader(CPU_INFO))) {
             String line;
             while ((line = br.readLine()) != null) {
@@ -101,43 +89,6 @@ public class Properties {
                 services = "http, FurnaceMonitor, SolarControl, FurnaceSlave, SolarSlave";
                 loggers = "FurnaceStateToInflux, SolarStateToInflux";
                 break;
-        }
-
-        // Override from properties file
-        if (prop != null) {
-            if (prop.getProperty("iot.id") != null) {
-                deviceName = prop.getProperty("iot.id");
-            }
-            if (prop.getProperty("influx.ip") != null) {
-                influxIp = prop.getProperty("influx.ip");
-            }
-            if (prop.getProperty("influx.port") != null) {
-                influxPort = Integer.parseInt(prop.getProperty("influx.port"));
-            }
-            if (prop.getProperty("monitor.ip") != null) {
-                monitorIp = prop.getProperty("monitor.ip");
-            }
-            if (prop.getProperty("monitor.port") != null) {
-                monitorPort = Integer.parseInt(prop.getProperty("monitor.port"));
-            }
-            if (prop.getProperty("logstash.ip") != null) {
-                logstashIp = prop.getProperty("logstash.ip");
-            }
-            if (prop.getProperty("logstash.port") != null) {
-                logstashPort = Integer.parseInt(prop.getProperty("logstash.port"));
-            }
-            if (prop.getProperty("boiler.name") != null) {
-                boilerName = prop.getProperty("boiler.name");
-            }
-            if (prop.getProperty("boiler.sensor") != null) {
-                boilerSensor = prop.getProperty("boiler.sensor");
-            }
-            if (prop.getProperty("services") != null) {
-                services = prop.getProperty("services");
-            }
-            if (prop.getProperty("loggers") != null) {
-                loggers = prop.getProperty("loggers");
-            }
         }
 
         try (Jedis jedis = new Jedis("localhost")) {
