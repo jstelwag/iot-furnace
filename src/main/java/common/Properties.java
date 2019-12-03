@@ -87,6 +87,13 @@ public class Properties {
                 deviceName = "sensor_apartment_I";
                 services = "DallasTemperature";
                 break;
+            case "0000000018d4278e":
+                deviceName = "koetshuis_kelder";
+                boilerName = "boiler200";
+                boilerSensor = "Ttop";
+                services = "http, FurnaceMonitor";
+                loggers = "FurnaceStateToInflux";
+                break;
         }
 
         // Override from properties file
