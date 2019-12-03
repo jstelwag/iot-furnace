@@ -21,7 +21,7 @@ public class FluxLogger {
         }
     }
 
-    public FluxLogger send(String line) {
+    public void send(String line) {
         byte[] data = line.getBytes();
         try (DatagramSocket socket = new DatagramSocket()) {
             DatagramPacket packet = new DatagramPacket(data, data.length, host, port);
@@ -31,7 +31,5 @@ public class FluxLogger {
                     + host.getHostAddress() + ":" + port + ": "
                     + e.getMessage());
         }
-
-        return this;
     }
 }

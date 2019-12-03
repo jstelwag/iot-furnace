@@ -12,7 +12,7 @@ public class Properties {
 
     public int httpPort = 8080;
 
-    public String influxIp = "192.168.78.100";
+    public String influxIp = "192.168.178.100";
     public int influxPort = 8087;
 
     public String monitorIp = "192.168.178.18";
