@@ -37,8 +37,7 @@ public class Properties {
                 prop.load(inputStream);
             } catch (IOException e) {
                 prop = null;
-                //todo logstash
-                System.out.println("Could not open properties file " + PROP_FILE);
+                LogstashLogger.INSTANCE.error("Could not open properties file " + PROP_FILE + ". " + e.getMessage());
             }
         }
         try (BufferedReader br = new BufferedReader(new FileReader(CPU_INFO))) {
@@ -51,8 +50,7 @@ public class Properties {
                 }
             }
         } catch (IOException e) {
-            //todo logstash
-            System.out.println("Could not retrieve cpu serial number from " + CPU_INFO);
+            LogstashLogger.INSTANCE.error("Could not retrieve cpu serial number from " + CPU_INFO + ". " + e.getMessage());
         }
     }
 
@@ -131,7 +129,7 @@ public class Properties {
             jedis.setex("services", 24*60*60, services);
             jedis.setex("loggers", 24*60*60, loggers);
         } catch (Exception e) {
-            //todo logstash
+            LogstashLogger.INSTANCE.warn("Failed to set device properties in Redis. " + e.getMessage());
         }
     }
 }

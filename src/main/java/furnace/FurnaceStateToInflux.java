@@ -36,7 +36,7 @@ public class FurnaceStateToInflux extends FluxLogger implements Runnable {
     private void logState() {
         try (BoilerDAO boilerDAO = new BoilerDAO()) {
             if (boilerDAO.getStateRaw() != null) {
-                send("boiler,name=" + BoilerDAO.boiler + " state=" + boilerDAO.getStateRaw());
+                send("boiler,name=" + BoilerDAO.boiler + " state=" + (boilerDAO.getState() ? "1i" : "0i"));
             } else {
                 LogstashLogger.INSTANCE.error("There is no state in Redis to log boiler state");
             }

@@ -5,6 +5,7 @@ import com.pi4j.io.w1.W1Device;
 import com.pi4j.io.w1.W1Master;
 import com.pi4j.component.temperature.impl.TmpDS18B20DeviceType;
 import com.pi4j.component.temperature.TemperatureSensor;
+import common.LogstashLogger;
 import org.apache.http.client.fluent.Request;
 import common.Properties;
 
@@ -16,8 +17,7 @@ public class DallasTemperature {
             W1Device device = master.getDevices(TmpDS18B20DeviceType.FAMILY_CODE).get(0);
             send(((TemperatureSensor) device).getTemperature());
         } else {
-            //todo logstash
-            System.out.println("Unexpected sensor count " + master.getDevices(TmpDS18B20DeviceType.FAMILY_CODE).size());
+            LogstashLogger.INSTANCE.error("Unexpected sensor count " + master.getDevices(TmpDS18B20DeviceType.FAMILY_CODE).size());
         }
     }
 
@@ -31,6 +31,8 @@ public class DallasTemperature {
             String furnaceResponse = Request.Get(furnaceRequest)
                     .execute().returnContent().asString();
             //todo check response
-        } catch (IOException e) {}
+        } catch (IOException e) {
+            LogstashLogger.INSTANCE.warn("Could not send temperature to monitor. " + e.getMessage());
+        }
     }
 }
