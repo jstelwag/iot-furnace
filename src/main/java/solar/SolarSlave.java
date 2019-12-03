@@ -13,7 +13,6 @@ import java.io.*;
 import java.util.Date;
 import java.util.Enumeration;
 
-
 /**
  * Created by Jaap on 25-7-2016.
  */
@@ -85,7 +84,7 @@ public class SolarSlave implements SerialPortEventListener {
             serialPort.addEventListener(this);
             serialPort.notifyOnDataAvailable(true);
         } catch (Exception e) {
-            System.err.println(e.toString());
+            LogstashLogger.INSTANCE.error("Faild to open usb connection at initializing Solar Slave." + e.getMessage());
         }
         addShutdownHook();
     }
@@ -113,9 +112,11 @@ public class SolarSlave implements SerialPortEventListener {
                 LogstashLogger.INSTANCE.info("Connection hijack, exiting SolarSlave");
                 System.exit(0);
             }
+
             jedis.setex(STARTTIME, TTL, startTime);
             if (oEvent.getEventType() == SerialPortEvent.DATA_AVAILABLE) {
                 String inputLine = input.readLine();
+                LogstashLogger.INSTANCE.info("Serial event: " + inputLine);
                 if (StringUtils.countMatches(inputLine, ":") == 7) {
                     //Format: Ttop:Tmiddle:Tbottom:TflowIn:TflowOut:SvalveI:SvalveII:Spump
                     if (!TemperatureSensor.isOutlier(inputLine.split(":")[0])) {
