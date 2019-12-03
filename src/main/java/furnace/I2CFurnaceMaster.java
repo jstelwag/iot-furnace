@@ -31,9 +31,9 @@ public class I2CFurnaceMaster {
             String slaveResponse = I2CUtil.byteToString(devices.get(deviceName));
 
             int matchCount = StringUtils.countMatches(slaveResponse,":");
-            if (matchCount >= minimumSlaveResponse + 1) {
+            if (matchCount >= minimumSlaveResponse - 1) {
                 state2Redis(slaveResponse);
-                if (matchCount == minimumSlaveResponse + 2) {
+                if (matchCount == minimumSlaveResponse) {
                     send2Log(slaveResponse);
                 }
                 LogstashLogger.INSTANCE.info("Requested furnace slave, request: " + slaveRequest()
@@ -61,7 +61,7 @@ public class I2CFurnaceMaster {
 
     void send2Log(String slaveResponse) {
         try {
-            int code = Integer.parseInt(slaveResponse.split(":")[minimumSlaveResponse + 2].trim());
+            int code = Integer.parseInt(slaveResponse.split(":")[minimumSlaveResponse].trim());
             switch (code) {
                 case 0:
                     // do nothing, no log to mention

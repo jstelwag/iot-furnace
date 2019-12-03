@@ -50,8 +50,8 @@ public class BoilerDAO implements Closeable {
     }
 
     public void setTemperature(String temperature) {
-        if (!isOutlier(temperature, -10.0, 105.0, 20.0, getTemperature())) {
-            jedis.setex(tempKey, TTL1, temperature);
+        if (!isOutlier(temperature.trim(), -10.0, 105.0, 20.0, getTemperature())) {
+            jedis.setex(tempKey, TTL1, temperature.trim());
         }
     }
 
@@ -65,6 +65,8 @@ public class BoilerDAO implements Closeable {
     public static boolean isOutlier(String temperature, double minTemp, double maxTemp, double maxDelta, Double previousTemperature) {
         if( !NumberUtils.isParsable(temperature)) {
             return true;
+        } else {
+            LogstashLogger.INSTANCE.warn("Not a parsable temperature '" + temperature + "'");
         }
         double t = Double.parseDouble(temperature);
         if (t < minTemp || t > maxTemp) {

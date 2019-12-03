@@ -30,8 +30,8 @@ public class FurnaceDAO implements Closeable {
     }
 
     public void setAuxiliaryTemperature(String temperature) {
-        if (!isOutlier(temperature, -30.0, 50.0, 3.0, getAuxiliaryTemperature())) {
-            jedis.setex(AUXILIARY_TEMP_KEY, TTL5, temperature);
+        if (!isOutlier(temperature.trim(), -30.0, 50.0, 3.0, getAuxiliaryTemperature())) {
+            jedis.setex(AUXILIARY_TEMP_KEY, TTL5, temperature.trim());
         }
     }
 

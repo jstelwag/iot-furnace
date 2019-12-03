@@ -6,7 +6,6 @@ import java.io.*;
 
 public class Properties {
 
-    public static final int redisExpireSeconds = 5*60;
     public java.util.Properties prop = null;
     public String cpuId;
     public String deviceName;
@@ -128,9 +127,9 @@ public class Properties {
         }
 
         try (Jedis jedis = new Jedis("localhost")) {
-            jedis.set("deviceName", deviceName);
-            jedis.set("services", services);
-            jedis.set("loggers", loggers);
+            jedis.setex("deviceName", 24*60*60, deviceName);
+            jedis.setex("services", 24*60*60, services);
+            jedis.setex("loggers", 24*60*60, loggers);
         } catch (Exception e) {
             //todo logstash
         }
