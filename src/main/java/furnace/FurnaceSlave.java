@@ -6,7 +6,6 @@ import gnu.io.CommPortIdentifier;
 import gnu.io.SerialPort;
 import gnu.io.SerialPortEvent;
 import gnu.io.SerialPortEventListener;
-import org.apache.commons.lang3.StringUtils;
 import redis.clients.jedis.Jedis;
 
 import java.io.BufferedReader;
@@ -110,16 +109,17 @@ public class FurnaceSlave implements SerialPortEventListener {
         if (oEvent.getEventType() == SerialPortEvent.DATA_AVAILABLE) {
             try {
                 String inputLine = input.readLine();
+                String inputs[] = inputLine.split(":");
                 if (inputLine.startsWith("log:")) {
                     Properties prop = new Properties();
                     LogstashLogger.INSTANCE.message("iot-furnace-controller-" + prop.deviceName, inputLine.substring(4).trim());
-                } else if (StringUtils.countMatches(inputLine, ":") >= 1) {
+                } else if (inputs.length >= 2) {
                     LogstashLogger.INSTANCE.info("Furnace event " + inputLine);
                     try (FurnaceDAO furnaceDAO = new FurnaceDAO(); BoilerDAO boilerDAO = new BoilerDAO()) {
-                        boilerDAO.setState("1".equalsIgnoreCase(inputLine.split(":")[0]));
-                        boilerDAO.setTemperature(inputLine.split(":")[1]);
-                        if (StringUtils.countMatches(inputLine, ":") > 1) {
-                            furnaceDAO.setAuxiliaryTemperature(inputLine.split(":")[2]);
+                        boilerDAO.setState("1".equalsIgnoreCase(inputs[0]));
+                        boilerDAO.setTemperature(inputs[1]);
+                        if (inputs.length > 2) {
+                            furnaceDAO.setAuxiliaryTemperature(inputs[2]);
                         }
                         try {
                             serialPort.getOutputStream().write(furnaceDAO.getFurnaceState() ? 'T' : 'F');

@@ -3,7 +3,6 @@ package furnace;
 import com.pi4j.io.i2c.I2CDevice;
 import common.LogstashLogger;
 import i2c.I2CUtil;
-import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -30,10 +29,10 @@ public class I2CFurnaceMaster {
             devices.get(deviceName).write(slaveRequest().getBytes());
             String slaveResponse = I2CUtil.byteToString(devices.get(deviceName));
 
-            int matchCount = StringUtils.countMatches(slaveResponse,":");
-            if (matchCount >= minimumSlaveResponse - 1) {
+            int matchCount = slaveResponse.split(":").length;
+            if (matchCount >= minimumSlaveResponse) {
                 state2Redis(slaveResponse);
-                if (matchCount == minimumSlaveResponse) {
+                if (matchCount == minimumSlaveResponse + 1) {
                     send2Log(slaveResponse);
                 }
                 LogstashLogger.INSTANCE.info("Requested furnace slave, request: " + slaveRequest()

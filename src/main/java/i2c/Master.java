@@ -4,6 +4,7 @@ import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
 import furnace.I2CFurnaceMaster;
+
 import org.apache.commons.lang3.StringUtils;
 import redis.clients.jedis.Jedis;
 import common.Properties;
@@ -100,11 +101,12 @@ public class Master {
                 device.write("H".getBytes());
                 String response = I2CUtil.byteToString(device);
                 LogstashLogger.INSTANCE.info("Device " + i + " response " + response);
-                if (response.startsWith("F:") && StringUtils.countMatches(response, ":") > 1) {
+                String splittedResponse[] = response.split(":");
+                if (response.startsWith("F:") && splittedResponse.length > 2) {
                     //deprecate
-                    furnace.devices.put(response.split(":")[1], device);
+                    furnace.devices.put(splittedResponse[1], device);
                 } else if (response.startsWith("H:")) {
-                    furnace.devices.put(response.split(":")[1], device);
+                    furnace.devices.put(splittedResponse[1], device);
                 } else if (response.startsWith("V") && response.contains("]")) {
                     valve.devices.put(response.substring(1, response.indexOf("]")), device);
                 } else {

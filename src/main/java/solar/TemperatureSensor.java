@@ -1,7 +1,5 @@
 package solar;
 
-import org.apache.commons.lang3.math.NumberUtils;
-
 import java.util.HashMap;
 import java.util.Map;
 
