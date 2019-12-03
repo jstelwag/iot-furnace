@@ -29,22 +29,14 @@ public class RedisHandler extends AbstractHandler {
             Collections.sort(all);
 
             for (String key : all) {
-                redisResponse.put(new JSONObject().put(key, new JSONObject()
-                        .put("value", jedis.get(key))
-                        .put("ttl", jedis.ttl(key))));
+                if (!"pipe.TflowSet".equals(key)) {
+                    //todo expand for this type
+                    redisResponse.put(new JSONObject().put(key, new JSONObject()
+                            .put("value", jedis.get(key))
+                            .put("ttl", jedis.ttl(key))));
+                }
             }
         }
-
-        /* todo add a way to log arrays
-                JSONArray redisResponse = new JSONArray();
-        for (String key : all) {
-            if (!"pipe.TflowSet".equals(key)) {
-                redisResponse.put(new JSONObject().put(key, new JSONObject()
-                    .put("value", jedis.get(key))
-                    .put("ttl", jedis.ttl(key))));
-            }
-        }
-         */
 
         response.setContentType("application/json");
         response.setStatus(HttpServletResponse.SC_OK);

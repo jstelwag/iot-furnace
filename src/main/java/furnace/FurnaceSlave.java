@@ -15,7 +15,6 @@ import java.io.InputStreamReader;
 import java.util.Date;
 import java.util.Enumeration;
 
-
 /**
  * Created by Jaap on 25-7-2016.
  */
