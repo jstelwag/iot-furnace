@@ -92,9 +92,15 @@ public class Properties {
         }
 
         try (Jedis jedis = new Jedis("localhost")) {
-            jedis.setex("deviceName", 24*60*60, deviceName);
-            jedis.setex("services", 24*60*60, services);
-            jedis.setex("loggers", 24*60*60, loggers);
+            if (deviceName != null) {
+                jedis.setex("deviceName", 24 * 60 * 60, deviceName);
+            }
+            if (services != null) {
+                jedis.setex("services", 24 * 60 * 60, services);
+            }
+            if (loggers != null) {
+                jedis.setex("loggers", 24 * 60 * 60, loggers);
+            }
         } catch (Exception e) {
             LogstashLogger.INSTANCE.warn("Failed to set device properties in Redis. " + e.getMessage());
         }
