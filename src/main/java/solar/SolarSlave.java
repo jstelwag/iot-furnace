@@ -31,8 +31,6 @@ public class SolarSlave implements SerialPortEventListener {
     private BufferedReader input;
     private SerialPort serialPort;
 
-    Jedis jedis;
-
     /** Milliseconds to block while waiting for port open */
     private static final int TIME_OUT = 2000;
     /** Default bits per second for COM port. */
@@ -42,16 +40,13 @@ public class SolarSlave implements SerialPortEventListener {
 
     public SolarSlave() {
         startTime = String.valueOf(new Date().getTime());
-        jedis = new Jedis("localhost");
-
-        if (jedis.exists(STARTTIME)) {
-            LogstashLogger.INSTANCE.info("Exiting redundant SolarSlave");
-            jedis.close();
-            System.exit(0);
+        try (Jedis jedis = new Jedis("localhost")) {
+            if (jedis.exists(STARTTIME)) {
+                LogstashLogger.INSTANCE.info("Exiting redundant SolarSlave");
+                System.exit(0);
+            }
+            jedis.setex(STARTTIME, TTL, startTime);
         }
-
-        jedis.setex(STARTTIME, TTL, startTime);
-        jedis.close();
 
         Properties prop = new Properties();
         // the next line is for Raspberry Pi and
@@ -100,11 +95,9 @@ public class SolarSlave implements SerialPortEventListener {
      * This will prevent port locking on platforms like Linux.
      */
     private synchronized void close() {
-        if (jedis == null || !jedis.isConnected()) {
-            jedis = new Jedis("localhost");
+        try (Jedis jedis = new Jedis("localhost")) {
+            jedis.del(STARTTIME);
         }
-        jedis.del(STARTTIME);
-        jedis.close();
         if (serialPort != null) {
             serialPort.removeEventListener();
             serialPort.close();
@@ -115,15 +108,13 @@ public class SolarSlave implements SerialPortEventListener {
      * Handle an event on the serial port. Read the data and print it.
      */
     public synchronized void serialEvent(SerialPortEvent oEvent) {
-        jedis = new Jedis("localhost");
-        if (jedis.exists(STARTTIME) && !jedis.get(STARTTIME).equals(startTime)) {
-            LogstashLogger.INSTANCE.info("Connection hijack, exiting SolarSlave");
-            jedis.close();
-            System.exit(0);
-        }
-        jedis.setex(STARTTIME, TTL, startTime);
-        if (oEvent.getEventType() == SerialPortEvent.DATA_AVAILABLE) {
-            try {
+        try (Jedis jedis = new Jedis("localhost")) {
+            if (jedis.exists(STARTTIME) && !jedis.get(STARTTIME).equals(startTime)) {
+                LogstashLogger.INSTANCE.info("Connection hijack, exiting SolarSlave");
+                System.exit(0);
+            }
+            jedis.setex(STARTTIME, TTL, startTime);
+            if (oEvent.getEventType() == SerialPortEvent.DATA_AVAILABLE) {
                 String inputLine = input.readLine();
                 if (StringUtils.countMatches(inputLine, ":") == 7) {
                     //Format: Ttop:Tmiddle:Tbottom:TflowIn:TflowOut:SvalveI:SvalveII:Spump
@@ -144,10 +135,10 @@ public class SolarSlave implements SerialPortEventListener {
                     }
                     jedis.setex("solarStateReal", 60, SolarState.principalState(
                             "T".equals(inputLine.split(":")[5])
-                            ,"T".equals(inputLine.split(":")[6])
+                            , "T".equals(inputLine.split(":")[6])
                             , "T".equals(inputLine.split(":")[7])).name());
 
-                    jedis.lpush("pipe.TflowSet", Double.toString(((double)new Date().getTime())/(60*60*1000))
+                    jedis.lpush("pipe.TflowSet", Double.toString(((double) new Date().getTime()) / (60 * 60 * 1000))
                             + ":" + inputLine.split(":")[4]);
                     jedis.ltrim("pipe.TflowSet", 0, T_SET_LENGTH);
 
@@ -170,13 +161,12 @@ public class SolarSlave implements SerialPortEventListener {
                 } else {
                     LogstashLogger.INSTANCE.error("Received garbage from the Solar micro controller: " + inputLine);
                 }
-            } catch (IOException e) {
-                LogstashLogger.INSTANCE.error("Problem reading serial input from USB,i will kill myself" + e.toString());
-                close();
-                System.exit(0);
             }
+        } catch (IOException e) {
+            LogstashLogger.INSTANCE.error("Problem reading serial input from USB, i will kill myself. " + e.getMessage());
+            close();
+            System.exit(0);
         }
-        jedis.close();
     }
 
     public void run() {
