@@ -1,6 +1,8 @@
-package i2c;
+package valve;
 
 import com.pi4j.io.i2c.I2CDevice;
+import i2c.I2CMaster;
+import i2c.I2CUtil;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.entity.ContentType;
 import common.LogstashLogger;
@@ -14,21 +16,23 @@ import redis.clients.jedis.Jedis;
 /**
  * Handles requests and responses from a connected Arduino valvegroup (I2CValveBridge)
  */
-public class ValveMaster {
+public class I2CValveMaster implements I2CMaster {
 
     private final String monitorIp;
     private final int monitorPort;
 
     private final int TTL = 60;
 
-    public ValveMaster(String monitorIp, int monitorPort) {
+    public I2CValveMaster(String monitorIp, int monitorPort) {
         this.monitorIp = monitorIp;
         this.monitorPort = monitorPort;
     }
 
-    protected final Map<String, I2CDevice> devices = new HashMap<>();
+    final Map<String, I2CDevice> devices = new HashMap<>();
 
-    public boolean parse(String deviceId) {
+    public Map<String, I2CDevice> devices() {return devices;}
+
+    public boolean request(String deviceId) {
         String slaveResponse;
         try {
             String monitorRequest = "http://" + monitorIp + ":" + monitorPort + "/valvegroup/";

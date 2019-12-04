@@ -2,6 +2,7 @@ package furnace;
 
 import com.pi4j.io.i2c.I2CDevice;
 import common.LogstashLogger;
+import i2c.I2CMaster;
 import i2c.I2CUtil;
 
 import java.io.IOException;
@@ -11,7 +12,7 @@ import java.util.Map;
 /**
  * Handles requests and responses from a connected Arduino valvegroup (I2CValveBridge)
  */
-public class I2CFurnaceMaster {
+public class I2CFurnaceMaster implements I2CMaster {
     private int minimumSlaveResponse = 2;
     private boolean hasAuxiliryTemperature = false;
 
@@ -22,9 +23,11 @@ public class I2CFurnaceMaster {
         }
     }
 
-    public final Map<String, I2CDevice> devices = new HashMap<>();
+    final Map<String, I2CDevice> devices = new HashMap<>();
 
-    public boolean parse(String deviceName) {
+    public Map<String, I2CDevice> devices() {return devices;}
+
+    public boolean request(String deviceName) {
         try {
             devices.get(deviceName).write(slaveRequest().getBytes());
             String slaveResponse = I2CUtil.byteToString(devices.get(deviceName));
