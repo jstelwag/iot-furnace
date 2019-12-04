@@ -133,11 +133,6 @@ public class Main {
                 Thread.sleep(5000);
             } catch (InterruptedException e) {
             }
-            try {
-                //hello
-            } catch (RuntimeException e) {
-                LogstashLogger.INSTANCE.error("Exception occurred at the regular speaker scheduling.", e);
-            }
         }
     }
 
