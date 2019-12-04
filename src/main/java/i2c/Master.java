@@ -33,7 +33,7 @@ public class Master {
             bus = I2CFactory.getInstance(I2CBus.BUS_1);
             LogstashLogger.INSTANCE.info("Started i2c master");
         } catch (I2CFactory.UnsupportedBusNumberException | IOException e) {
-            LogstashLogger.INSTANCE.fatal("Cannot connect i2c bus " + e.getMessage());
+            LogstashLogger.INSTANCE.fatal("Cannot connect i2c bus.", e);
             throw e;
         }
     }
@@ -47,7 +47,7 @@ public class Master {
                     try {
                         Runtime.getRuntime().exec("sudo reboot");
                     } catch (IOException e) {
-                        LogstashLogger.INSTANCE.fatal("Failed to reboot " + e.getMessage());
+                        LogstashLogger.INSTANCE.fatal("Failed to reboot.", e);
                     }
                 }
             } else {

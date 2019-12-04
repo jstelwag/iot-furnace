@@ -16,7 +16,7 @@ public class FluxLogger {
         try {
             host = InetAddress.getByName(properties.influxIp);
         } catch (UnknownHostException e) {
-            LogstashLogger.INSTANCE.error("Trying to set up InfluxDB client for unknown host " + e.toString());
+            LogstashLogger.INSTANCE.error("Trying to set up InfluxDB client for unknown host.", e);
             throw e;
         }
     }
@@ -28,8 +28,7 @@ public class FluxLogger {
             socket.send(packet);
         } catch (IOException e) {
             LogstashLogger.INSTANCE.error("IOException for message '" + line + "', UDP connection @"
-                    + host.getHostAddress() + ":" + port + ": "
-                    + e.getMessage());
+                    + host.getHostAddress() + ":" + port, e);
         }
     }
 }

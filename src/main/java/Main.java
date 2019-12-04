@@ -84,7 +84,7 @@ public class Main {
                     break;
             }
         } catch (Exception e) {
-            LogstashLogger.INSTANCE.error(args[0] + " has finished with unhandled exception " + e.toString());
+            LogstashLogger.INSTANCE.error(args[0] + " has finished with unhandled exception.", e);
         }
     }
 
@@ -124,7 +124,7 @@ public class Main {
             httpServer.start();
             httpServer.join();
         } catch (Exception e) {
-            LogstashLogger.INSTANCE.error("Failed to start http listener " + e.toString());
+            LogstashLogger.INSTANCE.error("Failed to start http listener.", e);
             System.exit(0);
         }
 
@@ -136,7 +136,7 @@ public class Main {
             try {
                 //hello
             } catch (RuntimeException e) {
-                LogstashLogger.INSTANCE.error("Exception occurred at the regular speaker scheduling " + e.toString());
+                LogstashLogger.INSTANCE.error("Exception occurred at the regular speaker scheduling.", e);
             }
         }
     }

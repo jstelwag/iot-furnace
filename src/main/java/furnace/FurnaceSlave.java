@@ -79,7 +79,7 @@ public class FurnaceSlave implements SerialPortEventListener {
             serialPort.addEventListener(this);
             serialPort.notifyOnDataAvailable(true);
         } catch (Exception e) {
-            LogstashLogger.INSTANCE.error("Faild to open usb connection at initializing Furnace Slave." + e.getMessage());
+            LogstashLogger.INSTANCE.error("Faild to open usb connection at initializing Furnace Slave.", e);
         }
         addShutdownHook();
     }
@@ -135,7 +135,7 @@ public class FurnaceSlave implements SerialPortEventListener {
                     LogstashLogger.INSTANCE.error("Received garbage from the Furnace micro controller: " + inputLine);
                 }
             } catch (IOException e) {
-                LogstashLogger.INSTANCE.error("Problem reading serial input from USB, exiting " + e.toString());
+                LogstashLogger.INSTANCE.error("Problem reading serial input from USB, exiting.", e);
                 close();
                 System.exit(0);
             }

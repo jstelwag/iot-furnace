@@ -45,7 +45,7 @@ public class Properties {
                 }
             }
         } catch (IOException e) {
-            LogstashLogger.INSTANCE.error("Could not retrieve cpu serial number from " + CPU_INFO + ". " + e.getMessage());
+            LogstashLogger.INSTANCE.error("Could not retrieve cpu serial number from " + CPU_INFO, e);
         }
     }
 

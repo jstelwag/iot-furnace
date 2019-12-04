@@ -32,7 +32,7 @@ public class DallasTemperature {
                     .execute().returnContent().asString();
             //todo check response
         } catch (IOException e) {
-            LogstashLogger.INSTANCE.warn("Could not send temperature to monitor. " + e.getMessage());
+            LogstashLogger.INSTANCE.warn("Could not send temperature to monitor.", e);
         }
     }
 }

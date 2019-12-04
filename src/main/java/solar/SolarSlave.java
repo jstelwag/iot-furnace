@@ -86,7 +86,7 @@ public class SolarSlave implements SerialPortEventListener {
             serialPort.addEventListener(this);
             serialPort.notifyOnDataAvailable(true);
         } catch (Exception e) {
-            LogstashLogger.INSTANCE.error("Faild to open usb connection at initializing Solar Slave." + e.getMessage());
+            LogstashLogger.INSTANCE.error("Faild to open usb connection at initializing Solar Slave.", e);
         }
         addShutdownHook();
     }
@@ -175,7 +175,7 @@ public class SolarSlave implements SerialPortEventListener {
                     }
                 }
             } catch (IOException e) {
-                LogstashLogger.INSTANCE.error("Problem reading serial input from USB, i will kill myself. " + e.getMessage());
+                LogstashLogger.INSTANCE.error("Problem reading serial input from USB, i will kill myself.", e);
                 close();
                 System.exit(0);
             }

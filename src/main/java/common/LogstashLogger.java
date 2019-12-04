@@ -10,7 +10,7 @@ public class LogstashLogger {
 
     public final static LogstashLogger INSTANCE = new LogstashLogger();
 
-    public final String iotId;
+    public final String deviceName;
 
     InetAddress host;
     final int port;
@@ -18,11 +18,12 @@ public class LogstashLogger {
     private LogstashLogger() {
         final Properties prop = new Properties();
         port = prop.logstashPort;
-        iotId = prop.deviceName;
+        deviceName = prop.deviceName;
 
         try {
             host = InetAddress.getByName(prop.logstashIp);
         } catch (UnknownHostException e) {
+            System.out.println("Can't send logs to this host " + prop.logstashIp + ". " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -31,20 +32,36 @@ public class LogstashLogger {
         message("FATAL:" + message);
     }
 
+    public void fatal(String message, Throwable t) {
+        message("FATAL:" + message + "\r\n" + t.getMessage());
+    }
+
     public void error(String message) {
         message("ERROR:" + message);
+    }
+
+    public void error(String message, Throwable t) {
+        message("ERROR:" + message + "\r\n" + t.getMessage());
     }
 
     public void warn(String message) {
         message("WARN:" + message);
     }
 
+    public void warn(String message, Throwable t) {
+        message("WARN:" + message + "\r\n" + t.getMessage());
+    }
+
     public void info(String message) {
         message("INFO:" + message);
     }
 
+    public void info(String message, Throwable t) {
+        message("INFO:" + message + "\r\n" + t.getMessage());
+    }
+
     private void message(String line) {
-        message("iot-furnace-" + iotId, line);
+        message("iot-furnace-" + deviceName, line);
     }
 
     public void message(String who, String line) {

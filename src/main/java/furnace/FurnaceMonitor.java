@@ -29,7 +29,7 @@ public class FurnaceMonitor {
             LogstashLogger.INSTANCE.info("Furnace response from the monitor for " + deviceName + ": " + furnaceResponse);
             parseAndPersist(furnaceResponse);
         } catch (IOException e) {
-            LogstashLogger.INSTANCE.error("Connection failure with iot-monitor @/furnace " + e.toString());
+            LogstashLogger.INSTANCE.error("Connection failure with iot-monitor @/furnace.", e);
             // Keep last state in Redis, when the TTL expires the furnace will go to the default mode
         }
     }
