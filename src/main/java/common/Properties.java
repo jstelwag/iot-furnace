@@ -72,11 +72,11 @@ public class Properties {
                 boilerSensor = "Ttop";
                 hasAuxilaryTemperature = true;
                 break;
-            case "00000000fee88d9a":
+            case "0000000056718ccc":
                 deviceName = "sensor_room_2";
                 services = "DallasTemperature";
                 break;
-            case "0000000056718ccc":
+            case "00000000fee88d9a":
                 deviceName = "sensor_apartment_I";
                 services = "DallasTemperature";
                 break;
