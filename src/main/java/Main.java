@@ -40,9 +40,7 @@ public class Main {
                     }
                     break;
                 case "ListPorts":
-                    if (hasService(args[0])) {
-                        new ListPorts();
-                    }
+                    ListPorts.print();
                     break;
                 case "SolarSlave":
                     if (hasService(args[0])) {
