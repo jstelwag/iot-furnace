@@ -1,4 +1,5 @@
 import furnace.FurnaceStateToInflux;
+import furnace.ListPorts;
 import handlers.RedisHandler;
 import i2c.Master;
 import iot.DallasTemperature;
@@ -36,6 +37,11 @@ public class Main {
                 case "FurnaceSlave":
                     if (hasService(args[0])) {
                         new FurnaceSlave().run();
+                    }
+                    break;
+                case "ListPorts":
+                    if (hasService(args[0])) {
+                        new ListPorts();
                     }
                     break;
                 case "SolarSlave":
