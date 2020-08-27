@@ -1,5 +1,5 @@
 import furnace.FurnaceStateToInflux;
-import furnace.ListPorts;
+import usb.ListPorts;
 import handlers.RedisHandler;
 import i2c.Master;
 import iot.DallasTemperature;
