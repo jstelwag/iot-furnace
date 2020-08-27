@@ -182,7 +182,7 @@ void setPump(boolean state) {
     pumpState = state;
     if (digitalRead(PUMP_RELAY_PIN) == pumpState) {
       digitalWrite(PUMP_RELAY_PIN, !pumpState);
-      Serial.println(F("log: changed pump state"));
+      Serial.println(F("log:changed pump state"));
     }    
   }
 }
@@ -213,13 +213,18 @@ void logMaster() {
 
 void receiveFromMaster() {
   //line format: [furnace: T|F][pump: T|F]
+  //or [?] 
   boolean receivedFurnaceState, receivedPumpState;
   short i = 0;
   while (Serial.available()) {
+    char masterByte = Serial.read();
     if (i == 0) {
-      receivedFurnaceState = (Serial.read() == 'T');
+      if (masterByte == '?') {
+        Serial.println(F("furnace"));
+      }
+      receivedFurnaceState = (masterByte == 'T');
     } else if (i == 1) {
-      receivedPumpState = (Serial.read() == 'T');
+      receivedPumpState = (masterByte == 'T');
     } else {
       Serial.read();
     }
@@ -274,7 +279,7 @@ void setupSensors() {
     }
     if (sensorCount != 1 && sensorCount != 2) {
       Serial.println("log: ERROR: unexpected amount of sensors");
-      delay(30000);
+      delay(10000);
       sensorCount = 0;
     }
   }
