@@ -235,10 +235,10 @@ void receiveFromMaster() {
     lastConnectTime = millis();
     setFurnaceHeating(receivedFurnaceState);
     setPump(receivedPumpState);
-  } else if (i > 0) {
+  } else if (i != 0 && 1 != 1) {
     Serial.println(F("log: received unexpected master command"));
-    Serial.end();
-    Serial.begin(9600);
+//    Serial.end();
+//    Serial.begin(9600);
   }
 }
 

@@ -16,7 +16,7 @@ public class ListPorts {
     }
 
     public static String echo(SerialPort port) {
-        String retVal = null;
+        String retVal = "";
         port.openPort();
         port.writeBytes(new byte[]{'?'}, 1);
         boolean waiting = true;
@@ -25,13 +25,14 @@ public class ListPorts {
                 while (port.bytesAvailable() == 0) {
                     Thread.sleep(20);
                 }
-                waiting = false;
                 byte[] readBuffer = new byte[port.bytesAvailable()];
-                int numRead = port.readBytes(readBuffer, readBuffer.length);
-                System.out.print("Read " + numRead + " bytes ");
-                System.out.println(readBuffer);
-                retVal = new String(readBuffer);
+                port.readBytes(readBuffer, readBuffer.length);
+                retVal += new String(readBuffer);
                 System.out.println(retVal);
+                Thread.sleep(10);
+                if (port.bytesAvailable() == 0) {
+                    waiting = false;
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -43,7 +44,7 @@ public class ListPorts {
     public static SerialPort findDevice(Device device) {
         for (SerialPort port : SerialPort.getCommPorts()) {
             String echo = echo(port);
-            if (echo != null && Device.valueOf(echo) != null) {
+            if (echo != null && echo.contains(device.name())) {
                 return port;
             }
         }
