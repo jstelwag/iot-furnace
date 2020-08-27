@@ -23,21 +23,24 @@ public class ListPorts {
         boolean waiting = true;
         try {
             while (waiting) {
-                while (port.bytesAvailable() <= 0) {
+                while (port.bytesAvailable() == 0) {
                     Thread.sleep(20);
                     sleep += 20;
                     if (sleep > 2000) {
                         waiting = false;
                         System.out.println("Waiting too long");
+                        break;
                     }
                 }
-                byte[] readBuffer = new byte[port.bytesAvailable()];
-                port.readBytes(readBuffer, readBuffer.length);
-                retVal += new String(readBuffer);
-                Thread.sleep(10);
-                sleep += 10;
-                if (port.bytesAvailable() <= 0) {
-                    waiting = false;
+                if (port.bytesAvailable() > 0) {
+                    byte[] readBuffer = new byte[port.bytesAvailable()];
+                    port.readBytes(readBuffer, readBuffer.length);
+                    retVal += new String(readBuffer);
+                    Thread.sleep(10);
+                    sleep += 10;
+                    if (port.bytesAvailable() <= 0) {
+                        waiting = false;
+                    }
                 }
             }
             System.out.println(retVal);
