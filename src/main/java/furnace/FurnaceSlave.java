@@ -6,10 +6,8 @@ import common.Properties;
 import redis.clients.jedis.Jedis;
 import usb.ListPorts;
 
-import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.InputStreamReader;
 
 /**
  * Created by Jaap on 25-7-2016.
@@ -19,7 +17,6 @@ public class FurnaceSlave implements Runnable, Closeable {
     private final static int TTL = 60;
     private final long startTime;
     private long lastConnection;
-    private final int DISCONNECT_THRESHOLD = 60000;
 
     private final Properties prop = new Properties();
 
@@ -60,6 +57,9 @@ public class FurnaceSlave implements Runnable, Closeable {
             } catch (InterruptedException e) { }
             serialPort.closePort();
         }
+        try (Jedis jedis = new Jedis("localhost")) {
+            jedis.del(STARTTIME);
+        }
     }
 
     public void listen() {
@@ -80,7 +80,7 @@ public class FurnaceSlave implements Runnable, Closeable {
     }
 
     public void respond() {
-        if (lineIn != "") {
+        if (!lineIn.equals("")) {
             String[] lineParts = lineIn.split(":");
             if (lineIn.startsWith("log:furnace:")) {
                 LogstashLogger.INSTANCE.message("iot-furnace-controller-" + prop.deviceName, lineIn.substring(12).trim());
@@ -123,9 +123,9 @@ public class FurnaceSlave implements Runnable, Closeable {
             listen();
             respond();
 
-            if (System.currentTimeMillis() - lastConnection > DISCONNECT_THRESHOLD) {
+            if (System.currentTimeMillis() - lastConnection > TTL*1000) {
                 LogstashLogger.INSTANCE.error("Closing furnace controller usb connection after timeout of inactivity.");
-                System.out.println("Perhaps lost the serial connection, closing");
+                System.out.println("Perhaps lost the furnace serial connection, closing");
                 close();
                 System.exit(0);
             }
