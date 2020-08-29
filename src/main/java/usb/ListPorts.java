@@ -11,7 +11,8 @@ public class ListPorts {
 
     public static void print() {
         for (SerialPort port : SerialPort.getCommPorts()) {
-            System.out.println("Port: " + port.getSystemPortName() + " (" + port.getDescriptivePortName() + ") - device: " + sniff(port));
+            System.out.println("Port: " + port.getSystemPortName() + " (" + port.getDescriptivePortName() + ") - device: " + openAndPeek(port));
+            port.closePort();
         }
     }
 
@@ -20,9 +21,10 @@ public class ListPorts {
     **/
     public static SerialPort findDevice(Device device) {
         for (SerialPort port : SerialPort.getCommPorts()) {
-            if (sniff(port) == device) {
+            if (openAndPeek(port) == device) {
                 return port;
             }
+            port.closePort();
         }
         return null;
     }
@@ -30,7 +32,7 @@ public class ListPorts {
     /**
     * Listens to given port and returns the Device that is connected to it, or null.
     **/
-    public static Device sniff(SerialPort port) {
+    public static Device openAndPeek(SerialPort port) {
         port.openPort();
         port.setComPortTimeouts(SerialPort.TIMEOUT_READ_SEMI_BLOCKING  | SerialPort.TIMEOUT_WRITE_BLOCKING, 500, 500);
         port.writeBytes("?".getBytes(), "?".getBytes().length);
@@ -59,8 +61,6 @@ public class ListPorts {
             }
         } catch (Exception e) {
             e.printStackTrace();
-        } finally {
-            port.closePort();
         }
         return null;
     }
