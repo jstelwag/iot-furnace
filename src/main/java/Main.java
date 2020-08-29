@@ -112,9 +112,7 @@ public class Main {
         return "unknown";
     }
 
-    private static void startHttp(int port) {
-        LogstashLogger.INSTANCE.info("Starting http at port " + port);
-
+    static Server createServer(int port) {
         ContextHandler redisContext = new ContextHandler("/redis");
         redisContext.setHandler(new RedisHandler());
         Server httpServer = new Server(port);
@@ -124,27 +122,26 @@ public class Main {
         errorHandler.setShowStacks(true);
         httpServer.addBean(errorHandler);
 
+        return httpServer;
+    }
+
+    private static void startHttp(int port) {
+        LogstashLogger.INSTANCE.info("Starting http at port " + port);
+        Server server = createServer(port);
         try {
-            httpServer.start();
-            httpServer.join();
+            server.start();
+            server.join();
         } catch (Exception e) {
             LogstashLogger.INSTANCE.error("Failed to start http listener.", e);
             System.exit(0);
         }
-
-        while (true) {
-            try {
-                Thread.sleep(5000);
-            } catch (InterruptedException e) {
-            }
-        }
     }
-
 
     public static boolean hasService(String service) {
         final Properties prop = new Properties();
             return prop.services != null && prop.services.contains(service);
     }
+
     public static boolean hasLogger(String logger) {
         final Properties prop = new Properties();
         return prop.loggers != null && prop.loggers.contains(logger);
@@ -160,5 +157,4 @@ public class Main {
             }
         }
     }
-
 }
