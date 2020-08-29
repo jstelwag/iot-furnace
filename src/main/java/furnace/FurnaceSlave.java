@@ -1,125 +1,82 @@
 package furnace;
 
+import com.fazecast.jSerialComm.SerialPort;
 import common.LogstashLogger;
 import common.Properties;
-import gnu.io.CommPortIdentifier;
-import gnu.io.SerialPort;
-import gnu.io.SerialPortEvent;
-import gnu.io.SerialPortEventListener;
 import redis.clients.jedis.Jedis;
+import usb.ListPorts;
 
 import java.io.BufferedReader;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.Date;
-import java.util.Enumeration;
 
 /**
  * Created by Jaap on 25-7-2016.
  */
-@Deprecated
-public class FurnaceSlave implements SerialPortEventListener {
+public class FurnaceSlave implements Runnable, Closeable {
 
     private final static int TTL = 60;
-    private final String startTime;
-    public final static String STARTTIME = "furnaceslave.starttime";
-    /**
-     * A BufferedReader which will be fed by a InputStreamReader
-     * converting the bytes into characters
-     * making the displayed results codepage independent
-     */
-    private BufferedReader input;
-    private SerialPort serialPort;
+    private final long startTime;
+    public final static String STARTTIME = "furnaceslave.runtime.seconds";
+
+    private final SerialPort serialPort;
+    private boolean stayOpen = true;
 
     /** Milliseconds to block while waiting for port open */
     private static final int TIME_OUT = 2000;
-    /** Default bits per second for COM port. */
-    private static final int DATA_RATE = 9600;
 
     public FurnaceSlave() {
-        startTime = String.valueOf(new Date().getTime());
+        startTime = System.currentTimeMillis();
 
         checkAndExitIfNotSingle();
 
-        Properties prop = new Properties();
-        // the next line is for Raspberry Pi and
-        // gets us into the while loop and was suggested here was suggested http://www.raspberrypi.org/phpBB3/viewtopic.php?f=81&t=32186
-        System.setProperty("gnu.io.rxtx.SerialPorts", prop.usbFurnace);
+        serialPort = ListPorts.findDevice(ListPorts.Device.furnace);
 
-        CommPortIdentifier portId = null;
-        Enumeration portEnum = CommPortIdentifier.getPortIdentifiers();
-
-        while (portEnum.hasMoreElements()) {
-            CommPortIdentifier currPortId = (CommPortIdentifier) portEnum.nextElement();
-            if (currPortId.getName().equals(prop.usbFurnace)) {
-                portId = currPortId;
-                break;
-            }
-        }
-        if (portId == null) {
-            LogstashLogger.INSTANCE.error("Could not find USB at " + prop.usbFurnace);
+        if (serialPort == null) {
+            LogstashLogger.INSTANCE.error("Could not find USB port, exiting");
             close();
             System.exit(0);
         }
 
-        try {
-            // open serial port, and use class name for the appName.
-            serialPort = (SerialPort) portId.open(this.getClass().getName(), TIME_OUT);
-
-            // set port parameters
-            serialPort.setSerialPortParams(DATA_RATE,
-                    SerialPort.DATABITS_8,
-                    SerialPort.STOPBITS_1,
-                    SerialPort.PARITY_NONE);
-
-            // open the streams
-            input = new BufferedReader(new InputStreamReader(serialPort.getInputStream()));
-
-            // add event listeners
-            serialPort.addEventListener(this);
-            serialPort.notifyOnDataAvailable(true);
-        } catch (Exception e) {
-            LogstashLogger.INSTANCE.error("Faild to open usb connection at initializing Furnace Slave.", e);
+        try (Jedis jedis = new Jedis("localhost")) {
+            jedis.set("usb.furnace", serialPort.getSystemPortName());
         }
-        addShutdownHook();
     }
 
     /**
      * This should be called when you stop using the port.
      * This will prevent port locking on platforms like Linux.
      */
-    public synchronized void close() {
-        if (serialPort != null) {
-            serialPort.removeEventListener();
-            serialPort.close();
+    public void close() {
+        stayOpen = false;
+        if (serialPort != null && serialPort.isOpen()) {
+            try {
+                Thread.sleep(1);
+            } catch (InterruptedException e) { }
+            serialPort.closePort();
         }
     }
 
-    /**
-     * Handle an event on the serial port. Read the data and print it.
-     */
-    public synchronized void serialEvent(SerialPortEvent oEvent) {
-        try (Jedis jedis = new Jedis("localhost")) {
-            if (jedis.exists(STARTTIME) && !jedis.get(STARTTIME).equals(startTime)) {
-                LogstashLogger.INSTANCE.info("Connection hijack, exiting SolarSlave");
-                System.exit(0);
-            }
-            jedis.setex(STARTTIME, TTL, startTime);
-        }
-        if (oEvent.getEventType() == SerialPortEvent.DATA_AVAILABLE) {
-            try {
-                String inputLine = input.readLine();
-                String inputs[] = inputLine.split(":");
-                if (inputLine.startsWith("log:")) {
+    public synchronized void listenAndRespond() {
+        if (serialPort.bytesAvailable() > 0) {
+            byte[] readBuffer = new byte[serialPort.bytesAvailable()];
+            serialPort.readBytes(readBuffer, readBuffer.length);
+            String[] inputLines = new String(readBuffer).split("\r\n");
+            for (String line : inputLines) {
+                System.out.println(line);
+                String[] lineParts = line.split(":");
+                if (line.startsWith("log:furnace:")) {
                     Properties prop = new Properties();
-                    LogstashLogger.INSTANCE.message("iot-furnace-controller-" + prop.deviceName, inputLine.substring(4).trim());
-                } else if (inputs.length >= 2) {
-                    LogstashLogger.INSTANCE.info("Furnace event " + inputLine);
+                    System.out.println(line.substring(12).trim());
+                    LogstashLogger.INSTANCE.message("iot-furnace-controller-" + prop.deviceName, line.substring(12).trim());
+                } else if (lineParts.length >= 2) {
+                    LogstashLogger.INSTANCE.info("Furnace event " + line);
                     try (FurnaceDAO furnaceDAO = new FurnaceDAO(); BoilerDAO boilerDAO = new BoilerDAO()) {
-                        boilerDAO.setState("1".equalsIgnoreCase(inputs[0]));
-                        boilerDAO.setTemperature(inputs[1]);
-                        if (inputs.length > 2) {
-                            furnaceDAO.setAuxiliaryTemperature(inputs[2]);
+                        boilerDAO.setState("1".equalsIgnoreCase(lineParts[0]));
+                        boilerDAO.setTemperature(lineParts[1]);
+                        if (lineParts.length > 2) {
+                            furnaceDAO.setAuxiliaryTemperature(lineParts[2]);
                         }
                         try {
                             serialPort.getOutputStream().write(furnaceDAO.getFurnaceState() ? 'T' : 'F');
@@ -132,27 +89,21 @@ public class FurnaceSlave implements SerialPortEventListener {
                         }
                     }
                 } else {
-                    LogstashLogger.INSTANCE.error("Received garbage from the Furnace micro controller: " + inputLine);
+                    LogstashLogger.INSTANCE.error("Received garbage from the Furnace micro controller: " + line);
                 }
-            } catch (IOException e) {
-                LogstashLogger.INSTANCE.error("Problem reading serial input from USB, exiting.", e);
-                close();
-                System.exit(0);
             }
+            try (Jedis jedis = new Jedis("localhost")) {
+                jedis.setex(STARTTIME, TTL, String.valueOf((int)((System.currentTimeMillis() - startTime)/1000)));
+            }
+            //Thread.sleep(50);
         }
     }
 
     public void run() {
         LogstashLogger.INSTANCE.info("Starting FurnaceSlave");
-        Thread t = new Thread() {
-            public void run() {
-                try {
-                    Thread.sleep(10000);
-                } catch (InterruptedException ie) {
-                }
-            }
-        };
-        t.start();
+        while (stayOpen) {
+            listenAndRespond();
+        }
     }
 
     private void checkAndExitIfNotSingle() {
@@ -160,16 +111,7 @@ public class FurnaceSlave implements SerialPortEventListener {
             if (jedis.exists(STARTTIME)) {
                 System.exit(0);
             }
-            jedis.setex(STARTTIME, TTL, startTime);
+            jedis.setex(STARTTIME, TTL, String.valueOf((int)((System.currentTimeMillis() - startTime)/1000)));
         }
-    }
-
-    private void addShutdownHook() {
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void run() {
-                close();
-            }
-        });
     }
 }
