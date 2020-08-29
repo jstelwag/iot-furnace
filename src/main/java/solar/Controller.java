@@ -76,10 +76,10 @@ public class Controller implements Runnable {
 
     private SolarState currentState;
 
-    public Controller() throws IOException {
+    public Controller() {
         jedis = new Jedis("localhost");
-        if (jedis.exists("solarState")) {
-            currentState = SolarState.valueOf(jedis.get("solarState"));
+        if (jedis.exists("solar.state")) {
+            currentState = SolarState.valueOf(jedis.get("solar.state"));
         }
     }
     @Override
@@ -105,12 +105,13 @@ public class Controller implements Runnable {
         } else {
             control();
         }
+        jedis.close();
     }
 
     private void control() {
         long lastStateChange = 0;
-        if (jedis.exists("lastStateChange")) {
-            lastStateChange = new Date().getTime() - Long.valueOf(jedis.get("lastStateChange"));
+        if (jedis.exists("solar.lastStateChange")) {
+            lastStateChange = new Date().getTime() - Long.parseLong(jedis.get("solar.lastStateChange"));
         }
         if (lastStateChange == 0) {
             stateStartup();
@@ -187,7 +188,7 @@ public class Controller implements Runnable {
     }
 
     private void resetOverheat() {
-        if (new Date().getTime() - Long.valueOf(jedis.get("lastStateChange")) > OVERHEAT_TIMEOUT_MS) {
+        if (new Date().getTime() - Long.parseLong(jedis.get("solar.lastStateChange")) > OVERHEAT_TIMEOUT_MS) {
             LogstashLogger.INSTANCE.info("Ending overheat status, switching to boiler500");
             stateLargeBoiler();
         }
@@ -248,8 +249,8 @@ public class Controller implements Runnable {
             Tbottem500 = null;
             LogstashLogger.INSTANCE.warn("Boiler temperature boiler500.Tbottom not available");
         }
-        if (jedis.exists("stateStartTflowOut")) {
-            stateStartTflowOut = Double.parseDouble(jedis.get("stateStartTflowOut"));
+        if (jedis.exists("solar.stateStartTflowOut")) {
+            stateStartTflowOut = Double.parseDouble(jedis.get("solar.stateStartTflowOut"));
         }
         if (jedis.exists("boiler200.Ttop")) {
             Ttop200 = Double.parseDouble(jedis.get("boiler200.Ttop"));
@@ -260,53 +261,53 @@ public class Controller implements Runnable {
     }
 
     private void stateStartup() {
-        jedis.set("solarState", SolarState.startup.name());
+        jedis.set("solar.state", SolarState.startup.name());
         //Take some extra time to smooth out early morning temperature swings.
-        jedis.set("lastStateChange", String.valueOf(new Date().getTime() + 10*60*1000));
+        jedis.set("solar.lastStateChange", String.valueOf(new Date().getTime() + 10*60*1000));
         LogstashLogger.INSTANCE.info("Going into startup state");
         resetTSlope();
     }
 
     private void stateRecycle() {
-        jedis.set("solarState", SolarState.recycle.name());
-        jedis.set("lastStateChange", String.valueOf(new Date().getTime()));
-        jedis.set("stateStartTflowOut", String.valueOf(TflowOut));
+        jedis.set("solar.state", SolarState.recycle.name());
+        jedis.set("solar.lastStateChange", String.valueOf(new Date().getTime()));
+        jedis.set("solar.stateStartTflowOut", String.valueOf(TflowOut));
         LogstashLogger.INSTANCE.info("Going into recycle state");
         resetTSlope();
     }
 
     private void stateRecycleTimeout() {
-        jedis.set("solarState", SolarState.recycleTimeout.name());
-        jedis.set("lastStateChange", String.valueOf(new Date().getTime()));
-        jedis.set("stateStartTflowOut", String.valueOf(TflowOut));
+        jedis.set("solar.state", SolarState.recycleTimeout.name());
+        jedis.set("solar.lastStateChange", String.valueOf(new Date().getTime()));
+        jedis.set("solar.stateStartTflowOut", String.valueOf(TflowOut));
         LogstashLogger.INSTANCE.info("Going into recycle timeout state");
         resetTSlope();
     }
 
     private void stateLargeBoiler() {
-        jedis.set("solarState", SolarState.boiler500.name());
-        jedis.set("lastStateChange", String.valueOf(new Date().getTime()));
-        jedis.set("stateStartTflowOut", String.valueOf(TflowOut));
+        jedis.set("solar.state", SolarState.boiler500.name());
+        jedis.set("solar.lastStateChange", String.valueOf(new Date().getTime()));
+        jedis.set("solar.stateStartTflowOut", String.valueOf(TflowOut));
         LogstashLogger.INSTANCE.info("Switching to boiler500");
         resetTSlope();
     }
 
     private void stateSmallBoiler() {
-        jedis.set("solarState", SolarState.boiler200.name());
-        jedis.set("lastStateChange", String.valueOf(new Date().getTime()));
-        jedis.set("stateStartTflowOut", String.valueOf(TflowOut));
+        jedis.set("solar.state", SolarState.boiler200.name());
+        jedis.set("solar.lastStateChange", String.valueOf(new Date().getTime()));
+        jedis.set("solar.stateStartTflowOut", String.valueOf(TflowOut));
         LogstashLogger.INSTANCE.info("Switching to boiler200");
         resetTSlope();
     }
 
     private void stateError() {
         if (currentState != SolarState.error) {
-            jedis.set("solarState", SolarState.error.name());
-            if (jedis.exists("lastStateChange")) {
-                jedis.del("lastStateChange"); //this will force system to startup at new state change
+            jedis.set("solar.state", SolarState.error.name());
+            if (jedis.exists("solar.lastStateChange")) {
+                jedis.del("solar.lastStateChange"); //this will force system to startup at new state change
             }
-            if (jedis.exists("stateStartTflowOut")) {
-                jedis.del("stateStartTflowOut");
+            if (jedis.exists("solar.stateStartTflowOut")) {
+                jedis.del("solar.stateStartTflowOut");
             }
             LogstashLogger.INSTANCE.info("Going into error state");
             resetTSlope();
@@ -315,9 +316,9 @@ public class Controller implements Runnable {
 
     private void stateOverheat() {
         if (currentState != SolarState.overheat) {
-            jedis.set("solarState", SolarState.overheat.name());
-            jedis.set("lastStateChange", String.valueOf(new Date().getTime()));
-            jedis.set("stateStartTflowOut", String.valueOf(TflowOut));
+            jedis.set("solar.state", SolarState.overheat.name());
+            jedis.set("solar.lastStateChange", String.valueOf(new Date().getTime()));
+            jedis.set("solar.stateStartTflowOut", String.valueOf(TflowOut));
             LogstashLogger.INSTANCE.info("Going into overheat state");
             resetTSlope();
         }
@@ -325,9 +326,9 @@ public class Controller implements Runnable {
 
     private void stateDefrost() {
         if (currentState != SolarState.defrost) {
-            jedis.set("solarState", SolarState.defrost.name());
-            jedis.set("lastStateChange", String.valueOf(new Date().getTime()));
-            jedis.set("stateStartTflowOut", String.valueOf(TflowOut));
+            jedis.set("solar.state", SolarState.defrost.name());
+            jedis.set("solar.lastStateChange", String.valueOf(new Date().getTime()));
+            jedis.set("solar.stateStartTflowOut", String.valueOf(TflowOut));
             LogstashLogger.INSTANCE.info("Going into defrost state");
             resetTSlope();
         }
@@ -335,13 +336,13 @@ public class Controller implements Runnable {
 
     private void stateSunset() {
         if (currentState != SolarState.sunset) {
-            jedis.set("solarState", SolarState.sunset.name());
+            jedis.set("solar.state", SolarState.sunset.name());
             LogstashLogger.INSTANCE.info("Going into sunset state, " + new Sun());
-            if (jedis.exists("lastStateChange")) {
-                jedis.del("lastStateChange"); //this will force system to startup at new state change
+            if (jedis.exists("solar.lastStateChange")) {
+                jedis.del("solar.lastStateChange"); //this will force system to startup at new state change
             }
-            if (jedis.exists("stateStartTflowOut")) {
-                jedis.del("stateStartTflowOut");
+            if (jedis.exists("solar.stateStartTflowOut")) {
+                jedis.del("solar.stateStartTflowOut");
             }
         }
         resetTSlope();
