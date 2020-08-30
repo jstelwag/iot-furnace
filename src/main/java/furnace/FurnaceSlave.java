@@ -85,13 +85,14 @@ public class FurnaceSlave implements Runnable, Closeable {
             String[] lineParts = lineIn.split(":");
             if (lineIn.startsWith("log:furnace:")) {
                 LogstashLogger.INSTANCE.message("iot-furnace-controller-" + prop.deviceName, lineIn.substring(12).trim());
-            } else if (lineParts.length >= 2) {
+            } else if (lineParts.length >= 3) {
+                //Format: "furnace:"[furnace state]:[boiler temp]:[auxiliary temp]
                 LogstashLogger.INSTANCE.info("Furnace event " + lineIn);
                 try (FurnaceDAO furnaceDAO = new FurnaceDAO(); BoilerDAO boilerDAO = new BoilerDAO()) {
-                    boilerDAO.setState("1".equalsIgnoreCase(lineParts[0]));
-                    boilerDAO.setTemperature(lineParts[1]);
-                    if (lineParts.length > 2) {
-                        furnaceDAO.setAuxiliaryTemperature(lineParts[2]);
+                    boilerDAO.setState("1".equalsIgnoreCase(lineParts[1]));
+                    boilerDAO.setTemperature(lineParts[2]);
+                    if (lineParts.length > 3) {
+                        furnaceDAO.setAuxiliaryTemperature(lineParts[3]);
                     }
                     try {
                         serialPort.getOutputStream().write(furnaceDAO.getFurnaceState() ? 'T' : 'F');
