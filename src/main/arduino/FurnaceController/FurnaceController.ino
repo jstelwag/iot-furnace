@@ -71,7 +71,7 @@ void setup() {
   digitalWrite(PUMP_RELAY_PIN, !pumpState);
   lastConnectTime = millis(); //assume connection has been successful
   lastPostTime = POSTING_INTERVAL; //force immediate post
-  Serial.println(F("log:furnace:controller has started"));
+  Serial.println(F("log:furnace:INFO:controller has started"));
 }
 
 void loop() {
@@ -101,22 +101,22 @@ void boilerControl() {
       setPump(false);
       if (furnaceHeatingState) {
         setFurnaceHeating(false);
-        Serial.println(F("log:furnace:waiting 4 min for pump to stop"));
+        Serial.println(F("log:INFO:furnace:waiting 4 min for pump to stop"));
         delay(240000); // wait 4 minutes
       }
       setBoilerValve(true);
       delay(5000); // wait for the valve to switch
       setFurnaceBoiler(true);
-      Serial.println(F("log:furnace:switched furnace boiler on"));
+      Serial.println(F("log:INFO:furnace:switched furnace boiler on"));
     }
   } else if (Tboiler < BOILER_STOP_TEMP && furnaceBoilerState) {
     //Keep the boiler on
   } else if (furnaceBoilerState) {
     setFurnaceBoiler(false);
-    Serial.println(F("log:furnace:waiting 2 min for pump to stop"));
+    Serial.println(F("log:furnace:INFO:waiting 2 min for pump to stop"));
     delay(120000);
     setBoilerValve(false);
-    Serial.println(F("log:furnace:switched furnace boiler off"));
+    Serial.println(F("log:furnace:INFO:switched furnace boiler off"));
   }
 }
 
@@ -134,7 +134,7 @@ void noMasterHeatingControl() {
     } else {
       setFurnaceHeating(true);
     }
-    Serial.println(F("log:furnace:not receiving from master"));
+    Serial.println(F("log:furnace:ERROR:not receiving from master"));
     delay(30000);
   }
 }
@@ -148,18 +148,18 @@ void setFurnaceBoiler(boolean state) {
   }
   if (digitalRead(FURNACE_BOILER_RELAY_PIN) == furnaceBoilerState) {
     digitalWrite(FURNACE_BOILER_RELAY_PIN, !furnaceBoilerState);
-    Serial.println(F("log:furnace:changed furnace boiler state"));
+    Serial.println(F("log:furnace:INFO:changed furnace boiler state"));
   }  
 }
 
 void setBoilerValve(boolean state) {
   if (state && (furnaceHeatingState || furnaceBoilerState)) {
-    Serial.println(F("log:furnace:ignoring valve change when furnace is on"));
+    Serial.println(F("log:furnace:WARN:ignoring valve change when furnace is on"));
   } else {
     boilerValveState = state;
     if (digitalRead(BOILER_VALVE_RELAY_PIN) == boilerValveState) {
       digitalWrite(BOILER_VALVE_RELAY_PIN, !boilerValveState);
-      Serial.println(F("log:furnace:changed boiler valve state"));
+      Serial.println(F("log:furnace:INFO:changed boiler valve state"));
     }
   }
 }
@@ -171,20 +171,20 @@ void setFurnaceHeating(boolean state) {
   }
   if (digitalRead(FURNACE_HEATING_RELAY_PIN) == furnaceHeatingState) {
     digitalWrite(FURNACE_HEATING_RELAY_PIN, !furnaceHeatingState);
-    Serial.println(F("log:furnace:changed furnace heating state"));
+    Serial.println(F("log:furnace:INFO:changed furnace heating state"));
   }
 }
 
 void setPump(boolean state) {
   if (!furnaceHeatingState && state) {
-    Serial.println(F("log:furnace:ignoring request to start pump while furnace is off"));
+    Serial.println(F("log:furnace:WARN:ignoring request to start pump while furnace is off"));
   } else if (boilerValveState && state) {
-    Serial.println(F("log:furnace:ignoring request to start pump while boiler valve is on"));
+    Serial.println(F("log:furnace:WARN:ignoring request to start pump while boiler valve is on"));
   } else {
     pumpState = state;
     if (digitalRead(PUMP_RELAY_PIN) == pumpState) {
       digitalWrite(PUMP_RELAY_PIN, !pumpState);
-      Serial.println(F("log:furnace:changed pump state"));
+      Serial.println(F("log:furnace:INFO:changed pump state"));
     }    
   }
 }
@@ -239,7 +239,7 @@ void receiveFromMaster() {
     setFurnaceHeating(receivedFurnaceState);
     setPump(receivedPumpState);
   } else if (i != 0 && 1 != 1) {
-    Serial.println(F("log:furnace:received unexpected master command"));
+    Serial.println(F("log:furnace:ERROR:received unexpected master command"));
 //    Serial.end();
 //    Serial.begin(9600);
   }

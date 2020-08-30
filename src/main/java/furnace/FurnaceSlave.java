@@ -81,6 +81,7 @@ public class FurnaceSlave implements Runnable, Closeable {
 
     public void respond() {
         if (!lineIn.equals("")) {
+            LogstashLogger.INSTANCE.info("Serial input from furnace: " + lineIn);
             String[] lineParts = lineIn.split(":");
             if (lineIn.startsWith("log:furnace:")) {
                 LogstashLogger.INSTANCE.message("iot-furnace-controller-" + prop.deviceName, lineIn.substring(12).trim());

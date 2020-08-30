@@ -26,9 +26,6 @@ public class Properties {
     public final double latitude = 50.803;
     public final double longitude = 5.955;
 
-    public final String usbSolar = "/dev/ttyACM0";
-    public final String usbFurnace = "/dev/ttyUSB0";
-
     public String services;
     public String loggers;
 
